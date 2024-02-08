@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
+import { App, TFile , Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
 
 class ChatModal extends Modal {
     private input: TextComponent;
@@ -61,6 +61,23 @@ export default class MyPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+		// Listen for file creation
+		this.registerEvent(
+			this.app.vault.on('create', (file: TFile) => {
+				if (file instanceof TFile && file.extension === 'md') {
+					this.processFile(file);
+				}
+			})
+		);
+
+		// Listen for file modification
+		this.registerEvent(
+			this.app.vault.on('modify', (file: TFile) => {
+				if (file instanceof TFile && file.extension === 'md') {
+					this.processFile(file);
+				}
+			})
+		);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -144,6 +161,15 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	private async processFile(file: TFile) {
+        // Read file content
+        const content = await this.app.vault.read(file);
+        
+        // Here you would implement the logic to generate the embedding and index it
+        console.log(`Processing file: ${file.path}`);
+        // Example: generateEmbeddingAndIndex(content, file.path);
+    }
 }
 
 class SampleModal extends Modal {
