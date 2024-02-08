@@ -1,9 +1,6 @@
-# import
 from langchain.text_splitter import CharacterTextSplitter
 from obsidian_loader import ObsidianLoader
-from langchain_community.embeddings.sentence_transformer import (
-    SentenceTransformerEmbeddings,
-)
+from langchain_community.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 from langchain_community.vectorstores import Chroma
 
 # load the document and split it into chunks
@@ -26,3 +23,8 @@ docs = db.similarity_search(query)
 
 # print results
 print(docs[0].page_content)
+
+# Questions : 
+# Is this persistent  ? 
+# TODO : allow the user to trigger this from Obsidian
+# Think about the inference process. How do we run this locally ?
