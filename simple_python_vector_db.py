@@ -1,6 +1,3 @@
-from pydoc import Doc
-from chromadb.config import C
-from flask import Flask, request, jsonify
 import hashlib
 import json
 from sentence_transformers import SentenceTransformer
@@ -10,7 +7,6 @@ from typing import Iterator, Tuple
 import logging
 
 
-# TODO : debug the getchunk_text
 class DocumentStore:
     def __init__(self, storage_path: str, chunk_size: int=1000, overlap: int=200):
         """
@@ -21,7 +17,6 @@ class DocumentStore:
         """
         self.storage_path = storage_path
         self.embedded_chunks = np.array([],dtype=np.float32)
-        self.chunk_hash_to_doc_id = {}
         self.chunk_id_to_doc_id = {}
         self.doc_id_to_file_path = {}
         self.pointer_start_of_doc_id = np.array([],dtype=np.int32)
@@ -46,7 +41,6 @@ class DocumentStore:
             self.embedded_chunks = np.load(os.path.join(self.storage_path,"embedded_chunks.npy"))
             self.pointer_start_of_doc_id = np.load(os.path.join(self.storage_path,"pointer_start_of_doc_id.npy"))
 
-            self.chunk_hash_to_doc_id = json.load(open(os.path.join(self.storage_path,"chunk_hash_to_doc_id.json")))
             self.doc_id_to_file_path = json.load(open(os.path.join(self.storage_path,"doc_id_to_file_path.json")))
             self.chunk_id_to_doc_id = json.load(open(os.path.join(self.storage_path,"chunk_id_to_doc_id.json")))
 
@@ -68,7 +62,6 @@ class DocumentStore:
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
         np.save(os.path.join(self.storage_path,"embedded_chunks.npy"),self.embedded_chunks)
-        json.dump(self.chunk_hash_to_doc_id,open(os.path.join(self.storage_path,"chunk_hash_to_doc_id.json"),"w"))
         json.dump(self.doc_id_to_file_path,open(os.path.join(self.storage_path,"doc_id_to_file_path.json"),"w"))
         json.dump(self.chunk_id_to_doc_id,open(os.path.join(self.storage_path,"chunk_id_to_doc_id.json"),"w"))
         json.dump({'max_doc_id': self.max_doc_id, 'max_chunk_id': self.max_chunk_id, 'chunk_size': self.chunk_size, 'overlap': self.overlap},open(os.path.join(self.storage_path,"metadata.json"),"w"))
@@ -79,29 +72,21 @@ class DocumentStore:
         Adds a document to the store and returns the number of chunks added
         """
         chunks = self.chunk_text(file_path)
-        doc_id = self.max_doc_id + 1
-        self.doc_id_to_file_path[doc_id] = file_path
-        self.pointer_start_of_doc_id = np.append(self.pointer_start_of_doc_id, self.max_chunk_id)
-
-        i=0
-        for hash,chunk  in chunks:
+        i=0 # indexed chunks so far
+        for hash,chunk in chunks: 
+            self.max_chunk_id += 1
+            if i==0 : # skip empty docs
+                self.max_doc_id += 1
+                self.doc_id_to_file_path[self.max_doc_id] = file_path
+                self.pointer_start_of_doc_id = np.append(self.pointer_start_of_doc_id, self.max_chunk_id)   
             vector = self.model.encode(chunk)
-            if hash in self.chunk_hash_to_doc_id:
-                self.log.info(f"Chunk {hash} already exists in the store, skipping...")
-                continue
+            i+=1
+            self.chunk_id_to_doc_id[self.max_chunk_id] = self.max_doc_id
+            if len(self.embedded_chunks) == 0:
+                self.embedded_chunks = np.array(vector).reshape(-1,384)
             else : 
-                i+=1
-                self.chunk_hash_to_doc_id[hash] = doc_id
-                self.max_chunk_id += 1
-                self.chunk_id_to_doc_id[self.max_chunk_id] = doc_id
-                if len(self.embedded_chunks) == 0:
-                    self.embedded_chunks = np.array(vector).reshape(-1,384)
-                else : 
-                    self.embedded_chunks = np.concatenate([self.embedded_chunks,np.array(vector).reshape(-1,384)],axis=0).reshape(-1,384)
-        
+                self.embedded_chunks = np.concatenate([self.embedded_chunks,np.array(vector).reshape(-1,384)],axis=0).reshape(-1,384)
         self.log.info(f"Added {i} chunks to the store")
-        if i>0 : 
-            self.max_doc_id += 1
         return i
     
     def chunk_text(self, file_path: str) -> Iterator[Tuple[str,str]]:
@@ -151,29 +136,5 @@ class DocumentStore:
 
 global DocStore
 DocStore = DocumentStore(os.path.join(os.curdir, 'docstore'))
-app = Flask(__name__)
-
-@app.route('/process', methods=['POST'])
-def process_file():
-    chunk_cnt = DocStore.add_document(request.json.get('file_path'))
-    return jsonify({'message': 'File processed successfully', 'chunk_count': chunk_cnt})
-
-@app.route('/persist', methods=['GET'])
-def persist_to_disk():
-    DocStore.persist_to_disk()
-    return jsonify({'message': 'Documents persisted to disk'})
-
-@app.route('/load', methods=['GET'])
-def load_from_disk():
-    DocStore.load_from_disk()
-    return jsonify({'message': 'Documents loaded from disk'})
-
-@app.route('/search', methods=['POST'])
-def similarity_search():
-    query = request.json.get('query')
-    k = request.json.get('k')
-    results = DocStore.similarity_search(query, k)
-    return jsonify(results)
 
 # if __name__ == '__main__':
-#     app.run(debug=True)
