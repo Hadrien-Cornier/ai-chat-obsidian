@@ -1,66 +1,26 @@
 import { App, TFile , Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
-
-class ChatModal extends Modal {
-    private input: TextComponent;
-    private output: HTMLDivElement;
-
-    constructor(app: App) {
-        super(app);
-    }
-
-    onOpen() {
-        let {contentEl} = this;
-
-        contentEl.empty();
-
-        contentEl.createEl('h1', {text: 'Ask Me Anything'});
-
-        this.input = new TextComponent(contentEl)
-            .setPlaceholder('Type your question here...')
-            .onChange(async (value) => {
-                // This is where you'd handle the input value, possibly sending it to your RAG model
-                // For demonstration, we'll just echo the input
-                this.setOutputText(`You asked: ${value}`);
-            });
-
-        contentEl.createEl('br');
-
-        const submitButton = new ButtonComponent(contentEl)
-            .setButtonText('Ask')
-            .onClick(() => {
-                // Simulate asking a question
-                this.input.inputEl.dispatchEvent(new Event('change'));
-            });
-
-        this.output = contentEl.createDiv();
-        this.output.addClass('chat-output');
-    }
-
-    private setOutputText(text: string) {
-        this.output.setText(text);
-    }
-
-    onClose() {
-        let {contentEl} = this;
-        contentEl.empty();
-    }
-}
+import { DocumentStore } from './DocumentStore';
+import { ChatBox } from './ChatBox';
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+interface AiChatSettings {
 	mySetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: AiChatSettings = {
 	mySetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class AiChat extends Plugin {
+	settings: AiChatSettings;
+	documentStore: DocumentStore;
+	chatBox: ChatBox;
 
 	async onload() {
 		await this.loadSettings();
+		this.documentStore = new DocumentStore(this.app, this.settings);
+		this.chatBox = new ChatBox(this.app);
 		// Listen for file creation
 		this.registerEvent(
 			this.app.vault.on('create', (file: TFile) => {
@@ -89,7 +49,7 @@ export default class MyPlugin extends Plugin {
             id: 'open-chat-modal',
             name: 'Open Chat',
             callback: () => {
-                new ChatModal(this.app).open();
+                this.chatBox.open();
             }
         })
 
@@ -100,14 +60,6 @@ export default class MyPlugin extends Plugin {
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Status Bar Text');
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
 		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
 			id: 'sample-editor-command',
@@ -118,24 +70,24 @@ export default class MyPlugin extends Plugin {
 			}
 		});
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+		// this.addCommand({
+		// 	id: 'open-sample-modal-complex',
+		// 	name: 'Open sample modal (complex)',
+		// 	checkCallback: (checking: boolean) => {
+		// 		// Conditions to check
+		// 		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		// 		if (markdownView) {
+		// 			// If checking is true, we're simply "checking" if the command can be run.
+		// 			// If checking is false, then we want to actually perform the operation.
+		// 			if (!checking) {
+		// 				new SampleModal(this.app).open();
+		// 			}
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
+		// 			// This command will only show up in Command Palette when the check function returns true
+		// 			return true;
+		// 		}
+		// 	}
+		// });
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
@@ -171,28 +123,12 @@ export default class MyPlugin extends Plugin {
 		new Notice('This is a notice that we are processing!');
         // Example: generateEmbeddingAndIndex(content, file.path);
     }
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
+}``
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: AiChat;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: AiChat) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
