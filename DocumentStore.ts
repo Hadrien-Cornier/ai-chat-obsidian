@@ -3,17 +3,9 @@ import { Notice } from 'obsidian';
 import { App, Plugin, TFile } from 'obsidian';
 import * as use from '@tensorflow-models/universal-sentence-encoder';
 import * as tf from '@tensorflow/tfjs';
-import { DocumentChunk } from 'types';
+import { DocumentChunk, Document } from 'types';
 import { assert } from 'console';
 const knnClassifier = require('@tensorflow-models/knn-classifier');
-
-
-interface Document{
-    id: number;
-    file: TFile;
-    pointer: number;
-}
-
 
 export class DocumentStore {
 
