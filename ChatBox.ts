@@ -1,11 +1,19 @@
 import {App, Modal, TextComponent, ButtonComponent} from 'obsidian';
+import {DocumentStore} from './DocumentStore';
+import AiChat from 'main';
 
 export class ChatBox extends Modal {
     private input: TextComponent;
     private output: HTMLDivElement;
+    private docStore: DocumentStore;
+    private plugin: AiChat;
+    private openAIApiKey: string;
 
-    constructor(app: App) {
+    constructor(app: App, plugin:AiChat) {
         super(app);
+        this.plugin = plugin
+        this.docStore = this.plugin.documentStore
+        this.openAIApiKey = this.plugin.settings.OpenAIKey
     }
 
     onOpen() {
@@ -18,9 +26,18 @@ export class ChatBox extends Modal {
         this.input = new TextComponent(contentEl)
             .setPlaceholder('Type your question here...')
             .onChange(async (value) => {
-                // This is where you'd handle the input value, possibly sending it to your RAG model
-                // For demonstration, we'll just echo the input
-                this.setOutputText(`You asked: ${value}`);
+
+                let query: string = "";
+                // capture the intent of the question before sending out a RAG request
+                // run a language model in tfjs to capture the intent of the question
+                // we can't. Maybe we can ask for an OpenAPI key from the user and use that 
+                // to send a request to a language model API
+
+                let ragResults : {filePath: string;similarity: number;documentText: string;} = this.docStore.similaritySearch(query);
+                
+                //here use the rag results 
+
+                this.setOutputText(`return the output`);
             });
 
         contentEl.createEl('br');

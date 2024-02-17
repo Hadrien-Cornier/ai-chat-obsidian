@@ -1,43 +1,38 @@
 import { App, TFile , Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
 import { DocumentStore } from './DocumentStore';
 import { ChatBox } from './ChatBox';
-
+import { AiChatSettings } from './types';
 // Remember to rename these classes and interfaces!
 
-interface AiChatSettings {
-	mySetting: string;
-}
-
-const DEFAULT_SETTINGS: AiChatSettings = {
-	mySetting: 'default'
-}
 
 export default class AiChat extends Plugin {
 	settings: AiChatSettings;
 	documentStore: DocumentStore;
 	chatBox: ChatBox;
+	filesToReprocess: Set<string> = new Set();;
 
 	async onload() {
 		await this.loadSettings();
-		this.documentStore = new DocumentStore(this.app, this.settings);
+		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat");
 		this.chatBox = new ChatBox(this.app);
-		// Listen for file creation
+
 		this.registerEvent(
 			this.app.vault.on('create', (file: TFile) => {
 				if (file instanceof TFile && file.extension === 'md') {
-					this.processFile(file);
+					this.filesToReprocess.add(file.path);
+				}
+			})
+		);
+		
+		this.registerEvent(
+			this.app.vault.on('modify', (file: TFile) => {
+				if (file instanceof TFile && file.extension === 'md') {
+					// TODO : optimize this so that we do not reinfer the file if we only modify one bit of it
+					this.filesToReprocess.add(file.path);
 				}
 			})
 		);
 
-		// Listen for file modification
-		this.registerEvent(
-			this.app.vault.on('modify', (file: TFile) => {
-				if (file instanceof TFile && file.extension === 'md') {
-					this.processFile(file);
-				}
-			})
-		);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -52,6 +47,18 @@ export default class AiChat extends Plugin {
                 this.chatBox.open();
             }
         })
+
+		this.addCommand({
+			// this is not robust to a restart of the app
+			// more robust to check if the file has been indexed
+			id: 'index-new-files',
+			name: 'Index New Files',
+			callback: () => {
+				this.filesToReprocess.forEach(filePath => this.documentStore.removeDocumentPath(filePath));
+				this.filesToReprocess.forEach(filePath => this.documentStore.addDocumentPath(filePath));
+            }
+        })
+
 
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -114,6 +121,12 @@ export default class AiChat extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	async getListOfNonIndexedFiles() {
+		const files = this.app.vault.getMarkdownFiles();
+		const indexedFiles = await this.documentStore.indexedFiles;
+		return files.filter(file => !indexedFiles.includes(file.path));
+	}
+
 	private async processFile(file: TFile) {
         // Read file content
         const content = await this.app.vault.read(file);
@@ -139,13 +152,12 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('OpenAI API Key')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('Enter your OpenAP')
+				.setValue(this.plugin.settings.OpenAIKey)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.OpenAIKey = value;
 					await this.plugin.saveSettings();
 				}));
 	}

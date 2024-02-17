@@ -23,7 +23,7 @@ export class DocumentStore {
 
     private embeddedChunks: tf.Tensor2D;
     private pointerStartOfDocId: number[];
-    private docIdsMarkedForDeletion: number[];
+    private docIdsMarkedForDeletion: Set<number>;
 
     private model: any;
 
@@ -47,7 +47,7 @@ export class DocumentStore {
       // Tensors
       this.embeddedChunks = tf.tensor2d([], [0, 0]);
       this.pointerStartOfDocId = [];
-      this.docIdsMarkedForDeletion = [];
+      this.docIdsMarkedForDeletion = new Set();
 
       // Metadata
       this.maxDocId = -1;
@@ -166,22 +166,29 @@ export class DocumentStore {
         return chunkIndex;
     }
 
+    public async removeDocumentPath(filePath: string): Promise<void> {
+      this.removeDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+    }
+
     public async removeDocument(file: TFile): Promise<void> {
-
-      //I don't have to update the pointers right away, I can leave 
-      // a gap of undeined values and then remove them in the backgroudn
-
       const currentDocument: Document = this.filePathToDoc[file.path];
-      this.docIdsMarkedForDeletion.push(currentDocument.id);
-      this.knn.clearClass(currentDocument.id);
-      // the only thing is we need to filter these guys out from the result set in the similarity search
-
-      console.log(`Removed document: ${file.name}`);
+      if (currentDocument != undefined) {
+        this.docIdsMarkedForDeletion.add(currentDocument.id);
+        this.knn.clearClass(currentDocument.id);
+        // the only thing is we need to filter these guys out from the result set in the similarity search
+        console.log(`Removed document: ${file.name}`);
+      }
+      else {
+        console.log(`Document: ${file.name} does not exist in the document store`);
+      }
     }
 
 
     private async garbageCollect(): Promise<void> {
       // TODO call this periodically to shift around the pointer values to remove the gaps
+      // we cannot update a modified file in place easily because it might have more chunks than before and overlap
+      // with the next file, so the robust way is to delete the old one and index the new and the GC
+      // will take care of cleaning up the gaps
     }
 
   
@@ -232,7 +239,7 @@ export class DocumentStore {
       
       let results: Array<{filePath: string, similarity: number, documentText: string}> = [];
 
-      Object.keys(confidences).forEach(classId => {
+      Object.keys(confidences).forEach(async classId => {
         const id: number = parseInt(classId);
         console.log(`classId: ${classId}, confidence: ${confidences[id]}`);
         results.push({filePath: this.indexToDoc[id].file.path, similarity: confidences[id], documentText: await this.app.vault.read(this.indexToDoc[id].file)});
