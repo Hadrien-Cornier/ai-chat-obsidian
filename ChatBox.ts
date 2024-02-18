@@ -36,7 +36,7 @@ function ultimateReply(intent:string, ragResults:string, prompt:string) : string
     return template;
 }
 
-function convertSimlarityResultToPrompt(document: SimilarityResult) {
+function convertSimlarityResultToPrompt(document: SimilarityResult): string {
     return `Document : ${document.filePath} \n Similarity : ${document.similarity} \n Text : \n ${document.documentText} \n ___` ;
 }
 
@@ -111,7 +111,7 @@ export class ChatBox extends Modal {
 
 
 
-    private setOutputText(text: string) {
+    private setOutputText(text: string): void {
         this.output.setText(text);
     }
 
