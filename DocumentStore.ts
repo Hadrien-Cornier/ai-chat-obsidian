@@ -3,7 +3,7 @@ import { Notice } from 'obsidian';
 import { App, Plugin, TFile } from 'obsidian';
 import * as use from '@tensorflow-models/universal-sentence-encoder';
 import * as tf from '@tensorflow/tfjs';
-import { DocumentChunk, Document } from 'types';
+import { DocumentChunk, Document, SimilarityResult} from 'types';
 import { assert } from 'console';
 const knnClassifier = require('@tensorflow-models/knn-classifier');
 
@@ -229,10 +229,10 @@ export class DocumentStore {
       });
     }
 
-    public async similaritySearch(query: string, topK: number = 5): Promise<Array<{filePath: string, similarity: number, documentText: string}>> {
+    public async similaritySearch(query: string, topK: number = 5): Promise<Array<SimilarityResult>> {
      
       const queryVector: tf.Tensor2D = await this.encodeStringToVector(query)
-      const totalNumberOfDocuments: number = this.maxDocId - this.docIdsMarkedForDeletion.length;
+      const totalNumberOfDocuments: number = this.maxDocId - this.docIdsMarkedForDeletion.size;
       
       const nn : {label: string, classIndex: number, confidences: {[classId: number]: number}} = await this.knn.predictClass(queryVector, topK);
       const confidences : {[classId: number]: number} = nn.confidences;

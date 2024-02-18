@@ -1,7 +1,7 @@
 import { App, TFile , Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
 import { DocumentStore } from './DocumentStore';
 import { ChatBox } from './ChatBox';
-import { AiChatSettings } from './types';
+import { AiChatSettings, DEFAULT_SETTINGS } from './types';
 // Remember to rename these classes and interfaces!
 
 
@@ -14,7 +14,7 @@ export default class AiChat extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat");
-		this.chatBox = new ChatBox(this.app);
+		this.chatBox = new ChatBox(this.app, this);
 
 		this.registerEvent(
 			this.app.vault.on('create', (file: TFile) => {
@@ -121,11 +121,11 @@ export default class AiChat extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	async getListOfNonIndexedFiles() {
-		const files = this.app.vault.getMarkdownFiles();
-		const indexedFiles = await this.documentStore.indexedFiles;
-		return files.filter(file => !indexedFiles.includes(file.path));
-	}
+	// async getListOfNonIndexedFiles() {
+	// 	const files = this.app.vault.getMarkdownFiles();
+	// 	const indexedFiles = await this.documentStore.indexedFiles;
+	// 	return files.filter(file => !indexedFiles.includes(file.path));
+	// }
 
 	private async processFile(file: TFile) {
         // Read file content

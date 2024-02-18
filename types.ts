@@ -18,3 +18,9 @@ export interface Document{
     file: TFile;
     pointer: number;
 }
+
+export type SimilarityResult = {
+    filePath: string;
+    similarity: number;
+    documentText: string;
+};
