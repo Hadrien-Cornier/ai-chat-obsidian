@@ -133,7 +133,7 @@ export default class AiChat extends Plugin {
         
         // Here you would implement the logic to generate the embedding and index it
         console.log(`Processing file: ${file.path}`);
-		new Notice('This is a notice that we are processing!');
+		new Notice('This is a notice that we are processing 2!');
         // Example: generateEmbeddingAndIndex(content, file.path);
     }
 }``

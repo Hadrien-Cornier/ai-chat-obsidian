@@ -1,16 +1,18 @@
-import {App, Modal, TextComponent, ButtonComponent} from 'obsidian';
+import {App, Modal, Notice, TextComponent, ButtonComponent} from 'obsidian';
 import {DocumentStore} from './DocumentStore';
 import AiChat from 'main';
 import { SimilarityResult } from 'types';
 
 async function queryOpenAI(apiKey: string, prompt: string) {
-    const response = await fetch('https://api.openai.com/v1/engines/davinci-codex/completions', {
+    127.0.0.1:
+    const response = await fetch('https://api.openai.com/v1/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
+            model: "gpt-3.5-turbo",
             prompt: prompt,
             max_tokens: 60
         })
@@ -68,32 +70,19 @@ export class ChatBox extends Modal {
 
         this.input = new TextComponent(contentEl)
             .setPlaceholder('Type your question here...')
-            .onChange(async (value) => {
+            // .onChange(async (value) => {
 
-                let query: string = "";
-                // capture the intent of the question before sending out a RAG request
-                // run a language model in tfjs to capture the intent of the question
-                // we can't. Maybe we can ask for an OpenAPI key from the user and use that 
-                // to send a request to a language model API
-
-
-                // CHAT BOT NUMBER 1 WITH INTENT DETECTION
-                // here we can use the openAI API to get the intent of the question
-                let intent: string = await queryOpenAI(this.openAIApiKey, promptOfIntentDetection(value));
-                console.log(intent);
+            //     let query: string = "";
+            //     // capture the intent of the question before sending out a RAG request
+            //     // run a language model in tfjs to capture the intent of the question
+            //     // we can't. Maybe we can ask for an OpenAPI key from the user and use that 
+            //     // to send a request to a language model API
 
 
-                // Now we get the documents that are relevant to the intent
-                let ragResults : SimilarityResult[] = await this.docStore.similaritySearch(query);
-                console.log(ragResults);
+            //     // CHAT BOT NUMBER 1 WITH INTENT DETECTION
+            //     // here we can use the openAI API to get the intent of the question
 
-                let resultPrompt: string = mapAndConcat(ragResults, convertSimlarityResultToPrompt) ;
-                // do a final prompt to extract the answer
-                let reply: string = ultimateReply(intent, resultPrompt, value);
-
-                // TODO : for now this does not support streaming I believe
-                this.setOutputText(reply);
-            });
+            // });
 
         contentEl.createEl('br');
 
@@ -102,6 +91,7 @@ export class ChatBox extends Modal {
             .onClick(() => {
                 // Simulate asking a question
                 this.input.inputEl.dispatchEvent(new Event('change'));
+                this.answer(this.input.getValue());
             });
 
         this.output = contentEl.createDiv();
@@ -109,7 +99,27 @@ export class ChatBox extends Modal {
     }
 
 
+    private async answer(question: string): Promise<void> {
+        new Notice('This is a notice that we are answering!');
+        let intent: string = await queryOpenAI(this.openAIApiKey, promptOfIntentDetection(question));
+        console.log(intent);
+        
+        new Notice('answer : intent detected ! ' + intent);
 
+
+        // Now we get the documents that are relevant to the intent
+        let ragResults : SimilarityResult[] = await this.docStore.similaritySearch(intent);
+        console.log(ragResults);
+        new Notice('answer : ragResults ! ' + ragResults);
+        let resultPrompt: string = mapAndConcat(ragResults, convertSimlarityResultToPrompt) ;
+        // do a final prompt to extract the answer
+        let reply: string = ultimateReply(intent, resultPrompt, question);
+
+        new Notice('answer : reply ! ' + reply);
+
+        // TODO : for now this does not support streaming I believe
+        this.setOutputText(reply);
+    }
 
     private setOutputText(text: string): void {
         this.output.setText(text);

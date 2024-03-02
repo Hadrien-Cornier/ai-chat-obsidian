@@ -5,7 +5,8 @@ import * as use from '@tensorflow-models/universal-sentence-encoder';
 import * as tf from '@tensorflow/tfjs';
 import { DocumentChunk, Document, SimilarityResult} from 'types';
 import { assert } from 'console';
-const knnClassifier = require('@tensorflow-models/knn-classifier');
+// @ts-ignore
+import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
 export class DocumentStore {
 
