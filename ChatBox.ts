@@ -4,22 +4,21 @@ import AiChat from 'main';
 import { SimilarityResult } from 'types';
 
 async function queryOpenAI(apiKey: string, prompt: string) {
-    127.0.0.1:
-    const response = await fetch('https://api.openai.com/v1/completions', {
+    const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: "gpt-3.5-turbo",
+            model: "llama2",
             prompt: prompt,
             max_tokens: 60
         })
     });
 
     if (!response.ok) {
-        throw new Error(`OpenAI API request failed with status ${response.status}`);
+        throw new Error(`Ollama API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
