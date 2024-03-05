@@ -4,7 +4,7 @@ import AiChat from 'main';
 import { SimilarityResult } from 'types';
 
 async function queryOpenAI(apiKey: string, prompt: string) {
-    const response = await fetch('http://localhost:11434/api/generate', {
+    const response = await fetch('http://localhost:8080/api/generate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
