@@ -8,7 +8,7 @@ async function queryOpenAI(apiKey: string, prompt: string) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Access-Control-Allow-Origin' : '*' 
         },
         body: JSON.stringify({
             model: "llama2",
