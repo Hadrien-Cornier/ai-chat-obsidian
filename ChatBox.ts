@@ -2,27 +2,35 @@ import {App, Modal, Notice, TextComponent, ButtonComponent} from 'obsidian';
 import {DocumentStore} from './DocumentStore';
 import AiChat from 'main';
 import { SimilarityResult } from 'types';
+import ollama from 'ollama'
+////////////////////////////////////////////////////////////////////////
+// Export the OLLAMA_ORIGINS environment variable with a value of 
+// "app://obsidian.md*"
+// we need this because otherwise we would be blocked by CORS
+console.log('export let OLLAMA_ORIGINS');
+export let OLLAMA_ORIGINS = 'app://obsidian.md*';
+////////////////////////////////////////////////////////////////////////
+//  After setting this, make sure to kill ollama and restart it
+//  `pkill ollama` 
+//  `ollama serve`
+////////////////////////////////////////////////////////////////////////
+// Define the async function to query an API
 
-async function queryOpenAI(apiKey: string, prompt: string) {
-    const response = await fetch('http://localhost:8080/api/generate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : '*' 
-        },
-        body: JSON.stringify({
-            model: "llama2",
-            prompt: prompt,
-            max_tokens: 60
+
+// we are using the ollama JS API to query the ollama server
+async function queryOllama(apiKey: string, prompt: string): Promise<string> {
+    try {
+        console.log('querying ollama using the ollama JS API');
+        const response = await ollama.chat({
+        model: 'llama2',
+        messages: [{ role: 'user', 
+        content: promptOfIntentDetection(prompt) }],
         })
-    });
-
-    if (!response.ok) {
-        throw new Error(`Ollama API request failed with status ${response.status}`);
+        return response.message.content;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error; // Re-throw the error after logging it
     }
-
-    const data = await response.json();
-    return data.choices[0].text.trim();
 }
 
 // function that wraps a prompt and modifies it through a template that injects static text with the prompt
@@ -100,7 +108,7 @@ export class ChatBox extends Modal {
 
     private async answer(question: string): Promise<void> {
         new Notice('This is a notice that we are answering!');
-        let intent: string = await queryOpenAI(this.openAIApiKey, promptOfIntentDetection(question));
+        let intent: string = await queryOllama(this.openAIApiKey, promptOfIntentDetection(question));
         console.log(intent);
         
         new Notice('answer : intent detected ! ' + intent);
