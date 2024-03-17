@@ -11,3 +11,7 @@ get_documents:
 
 persist:
 	curl -X GET $(ENDPOINT)/persist
+
+set-inference:
+	pip install -r requirements.txt
+	tensorflowjs_converter --input_format=tf_hub 'https://tfhub.dev/google/universal-sentence-encoder/4' /path/to/tfjs_model

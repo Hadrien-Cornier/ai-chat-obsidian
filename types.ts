@@ -1,11 +1,11 @@
 import { TFile } from 'obsidian';
 
 export interface AiChatSettings {
-	OpenAIKey: string;
+	selectedOption: string;
 }
 
 export const DEFAULT_SETTINGS: AiChatSettings = {
-	OpenAIKey: ''
+    selectedOption: 'llama2',
 }
 
 export interface DocumentChunk {

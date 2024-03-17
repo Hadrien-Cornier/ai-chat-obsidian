@@ -18,13 +18,13 @@ export let OLLAMA_ORIGINS = 'app://obsidian.md*';
 
 
 // we are using the ollama JS API to query the ollama server
-async function queryOllama(apiKey: string, prompt: string): Promise<string> {
+async function queryOllama(prompt: string): Promise<string> {
     try {
         console.log('querying ollama using the ollama JS API');
         const response = await ollama.chat({
         model: 'llama2',
         messages: [{ role: 'user', 
-        content: promptOfIntentDetection(prompt) }],
+        content: prompt }],
         })
         return response.message.content;
     } catch (error) {
@@ -33,15 +33,8 @@ async function queryOllama(apiKey: string, prompt: string): Promise<string> {
     }
 }
 
-// function that wraps a prompt and modifies it through a template that injects static text with the prompt
-// will be called for the intent detection
-function promptOfIntentDetection(prompt: string): string {
-    const template: string = `You are a job search assitant, your goal is to extract the intent of the following question : ${prompt} . Your response should be a short sentence that captures the intent of the question.`;
-    return template;
-}
-
-function ultimateReply(intent:string, ragResults:string, prompt:string) : string {
-    const template: string = `Given the following Intent and the documents searched and Original user query, please formulate a response to the user incorporating the document information \n Intent : ${intent} \n Documents : ${ragResults} \n User Query : ${prompt}`;
+function ultimateReply(ragResults:string, prompt:string) : string {
+    const template: string = `Given the following Documents and Original user query, please formulate a response to the user incorporating the document information \n Q : ${intent} \n###\n Documents : ${ragResults}`;
     return template;
 }
 
@@ -59,13 +52,11 @@ export class ChatBox extends Modal {
     private output: HTMLDivElement;
     private docStore: DocumentStore;
     private plugin: AiChat;
-    private openAIApiKey: string;
 
     constructor(app: App, plugin:AiChat) {
         super(app);
         this.plugin = plugin
         this.docStore = this.plugin.documentStore
-        this.openAIApiKey = this.plugin.settings.OpenAIKey
     }
 
     onOpen() {
@@ -108,22 +99,14 @@ export class ChatBox extends Modal {
 
     private async answer(question: string): Promise<void> {
         new Notice('This is a notice that we are answering!');
-        let intent: string = await queryOllama(this.openAIApiKey, promptOfIntentDetection(question));
-        console.log(intent);
-        
-        new Notice('answer : intent detected ! ' + intent);
-
 
         // Now we get the documents that are relevant to the intent
-        let ragResults : SimilarityResult[] = await this.docStore.similaritySearch(intent);
+        let ragResults : SimilarityResult[] = await this.docStore.similaritySearch(question);
         console.log(ragResults);
-        new Notice('answer : ragResults ! ' + ragResults);
+        // new Notice('answer : ragResults ! ' + ragResults);
         let resultPrompt: string = mapAndConcat(ragResults, convertSimlarityResultToPrompt) ;
         // do a final prompt to extract the answer
-        let reply: string = ultimateReply(intent, resultPrompt, question);
-
-        new Notice('answer : reply ! ' + reply);
-
+        let reply: string = await queryOllama(ultimateReply(resultPrompt, question)); ;
         // TODO : for now this does not support streaming I believe
         this.setOutputText(reply);
     }

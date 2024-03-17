@@ -16,6 +16,8 @@ export default class AiChat extends Plugin {
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat");
 		this.chatBox = new ChatBox(this.app, this);
 
+	
+
 		this.registerEvent(
 			this.app.vault.on('create', (file: TFile) => {
 				if (file instanceof TFile && file.extension === 'md') {
@@ -58,6 +60,16 @@ export default class AiChat extends Plugin {
 				this.filesToReprocess.forEach(filePath => this.documentStore.addDocumentPath(filePath));
             }
         })
+
+		//add a command to add wipe the storage an reindex all the files
+		this.addCommand({
+			id: 'reindex-all-files',
+			name: 'Reindex All Files',
+			callback: () => {
+				this.documentStore.clear();
+				this.app.vault.getMarkdownFiles().forEach(file => this.documentStore.addDocumentPath(file.path));
+			}
+		})
 
 
 		// Perform additional things with the ribbon
@@ -121,6 +133,11 @@ export default class AiChat extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	// function that resets the memory of the plugin
+	async clear() {
+	  this.documentStore.clear();
+	}
+
 	// async getListOfNonIndexedFiles() {
 	// 	const files = this.app.vault.getMarkdownFiles();
 	// 	const indexedFiles = await this.documentStore.indexedFiles;
@@ -152,13 +169,18 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('OpenAI API Key')
-			.addText(text => text
-				.setPlaceholder('Enter your OpenAP')
-				.setValue(this.plugin.settings.OpenAIKey)
-				.onChange(async (value) => {
-					this.plugin.settings.OpenAIKey = value;
-					await this.plugin.saveSettings();
-				}));
+			.setName('Select LLM Model')
+			.setDesc('Choose a model from the dropdown')
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption('llama2 - 7B', 'Llama2 - 7B')
+					.addOption('codellama', 'CodeLlama  - 7B')
+					.addOption('mistral - 7B', 'Mistral  - 7B')
+					.setValue(this.plugin.settings.selectedOption)
+					.onChange((value) => {
+						this.plugin.settings.selectedOption = value;
+						this.plugin.saveSettings();
+					});
+			});
 	}
 }

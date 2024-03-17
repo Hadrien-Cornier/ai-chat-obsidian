@@ -8,6 +8,7 @@ import { assert } from 'console';
 // @ts-ignore
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
+
 export class DocumentStore {
 
     // Very simple document store using tensorflow.js WebGL accelerated KNN classifier and text embeddings
@@ -26,7 +27,7 @@ export class DocumentStore {
     private pointerStartOfDocId: number[];
     private docIdsMarkedForDeletion: Set<number>;
 
-    private model: any;
+    private model: use.UniversalSentenceEncoder;
 
     private maxDocId: number = -1;
     private maxChunkId: number = -1;
@@ -37,7 +38,6 @@ export class DocumentStore {
     constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 1000, overlap: number = 200) {
       this.app = app;
       this.plugin = plugin;
-
 
       this.knn = knnClassifier.create();
 
@@ -61,15 +61,9 @@ export class DocumentStore {
   
     onload() {
     }
-  
+
     onunload() {
       this.knn.dispose();
-    }
-
-    private async encodeStringToVector(text: string): Promise<tf.Tensor2D> {
-      const model: use.UniversalSentenceEncoder = await use.load();
-      const embeddings: tf.Tensor2D = await model.embed([text]) as unknown as tf.Tensor2D;
-      return embeddings;
     }
 
     private async loadFromDisk(): Promise<void> {
@@ -80,15 +74,7 @@ export class DocumentStore {
         const fileContent: string = JSON.stringify(data, null, 2);
         await this.app.vault.adapter.write(filePath, fileContent);
       }
-    
-    private async saveTfTensorToFile(filePath: string, tensor: tf.Tensor): Promise<void> {
-        tensor.data().then((typedArray) => {
-          const buffer: Buffer = Buffer.from(typedArray.buffer);
-          this.app.vault.adapter.writeBinary(filePath,buffer);
-        });
 
-    }
-  
     public async persistToDisk(): Promise<void> {
 
       // classifier.getClassifierDataset()
@@ -125,12 +111,44 @@ export class DocumentStore {
           new Notice('Error persisting data to disk.');
         }
       }
+    
+    private async saveTfTensorToFile(filePath: string, tensor: tf.Tensor): Promise<void> {
+        tensor.data().then((typedArray) => {
+          const buffer: Buffer = Buffer.from(typedArray.buffer);
+          this.app.vault.adapter.writeBinary(filePath,buffer);
+        });
 
-      public addDocumentPath(filePath: string): void {
-        this.addDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+    }
+
+    public async testUse(): Promise<void>{
+      new Notice('START Loading the  Tokenizer ');
+      let tokenizer: void|number[] =  await use.loadTokenizer('https://storage.googleapis.com/learnjs-data/bert_vocab/vocab.json').then(tokenizer => {
+        tokenizer.encode('Hello, how are you?'); // [0, 15350, 29623, 2129, 2024, 2017, 29632]
+        } )
+      new Notice('DONE Loading the Tokenizer : ' + tokenizer);
+    }
+
+    public async loadmodel(): Promise<use.UniversalSentenceEncoder> {
+      // await this.testUse();
+      if (this.model === undefined) {
+        new Notice('Loading the Universal Sentence Encoder Model');
+        this.model = await use.load();
+        new Notice('Done Loading the Universal Sentence Encoder Model');
       }
+      return this.model;
+    }
+
+    private async encodeStringToVector(text: string): Promise<tf.Tensor2D> {
+      const model = await this.loadmodel();
+      const embeddings: tf.Tensor2D = await model.embed([text]) as unknown as tf.Tensor2D;
+      return embeddings;
+    }
+
+    public addDocumentPath(filePath: string): void {
+      this.addDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+    }
   
-      public async addDocument(file: TFile): Promise<number> {
+    public async addDocument(file: TFile): Promise<number> {
         const fileContent: string = await this.app.vault.read(file);
         const chunks: IterableIterator<DocumentChunk> = this.chunkText(fileContent);
         let chunkIndex: number = 0;
@@ -182,6 +200,21 @@ export class DocumentStore {
       else {
         console.log(`Document: ${file.name} does not exist in the document store`);
       }
+    }
+
+    //remove all documents
+    public async clear(): Promise<void> {
+      this.knn.clearAllClasses();
+      this.embeddedChunks = tf.tensor2d([], [0, 0]);
+      this.pointerStartOfDocId = [];
+      this.docIdsMarkedForDeletion = new Set();
+      this.maxDocId = -1;
+      this.maxChunkId = -1;
+      this.filePathToDoc = {};
+      this.indexToDoc = {};
+      console.log('Cleared the document store');
+      // now delete the saved files
+      await this.app.vault.adapter.remove(this.storagePath);
     }
 
 
