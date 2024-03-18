@@ -111,6 +111,13 @@ export class DocumentStore {
           new Notice('Error persisting data to disk.');
         }
       }
+
+    private async wipeDataFromDisk(): Promise<void> {
+      await this.app.vault.adapter.remove(this.storagePath);
+      await this.app.vault.createFolder(this.storagePath)
+      new Notice('Data successfully wiped from disk.');
+    }
+
     
     private async saveTfTensorToFile(filePath: string, tensor: tf.Tensor): Promise<void> {
         tensor.data().then((typedArray) => {
@@ -130,7 +137,7 @@ export class DocumentStore {
 
     public async loadmodel(): Promise<use.UniversalSentenceEncoder> {
       // await this.testUse();
-      if (this.model === undefined) {
+      if (typeof(this.model) !== typeof(use.UniversalSentenceEncoder)) {
         new Notice('Loading the Universal Sentence Encoder Model');
         this.model = await use.load();
         new Notice('Done Loading the Universal Sentence Encoder Model');
@@ -153,34 +160,28 @@ export class DocumentStore {
         const chunks: IterableIterator<DocumentChunk> = this.chunkText(fileContent);
         let chunkIndex: number = 0;
         let isFirstChunk: boolean = true;
+
+        this.maxDocId += 1;
+                
+        const currentDocument: Document = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
+
+        this.filePathToDoc[file.path] = currentDocument;
+        this.indexToDoc[this.maxDocId] = currentDocument;
+        
+        // add currentDocument.pointer to the pointer array
+        this.pointerStartOfDocId.push(currentDocument.pointer);
     
         for await (const {id, text} of chunks) {
             this.maxChunkId += 1;
-            if (isFirstChunk) {
-                this.maxDocId += 1;
-                
-                const currentDocument: Document = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
-
-                this.filePathToDoc[file.path] = currentDocument;
-                this.indexToDoc[this.maxDocId] = currentDocument;
-                
-                // add currentDocument.pointer to the pointer array
-                this.pointerStartOfDocId.push(currentDocument.pointer);
-                isFirstChunk = false;
-            }
-    
             const vector: tf.Tensor2D = await this.encodeStringToVector(text);
             this.knn.addExample(vector, this.maxDocId);
-    
             if (this.embeddedChunks === undefined || this.embeddedChunks.shape[0] === 0) {
                 this.embeddedChunks = vector.clone();
             } else {
                 this.embeddedChunks = tf.concat([this.embeddedChunks, vector], 0);
             }
-    
             chunkIndex++;
         }
-    
         console.log(`Added ${chunkIndex} chunks from document: ${file.name}`);
         return chunkIndex;
     }
@@ -194,11 +195,10 @@ export class DocumentStore {
       if (currentDocument != undefined) {
         this.docIdsMarkedForDeletion.add(currentDocument.id);
         this.knn.clearClass(currentDocument.id);
-        // the only thing is we need to filter these guys out from the result set in the similarity search
         console.log(`Removed document: ${file.name}`);
       }
       else {
-        console.log(`Document: ${file.name} does not exist in the document store`);
+        console.log(`Skipping Remove because Document: ${file.name} does not exist in the document store`);
       }
     }
 
@@ -212,9 +212,8 @@ export class DocumentStore {
       this.maxChunkId = -1;
       this.filePathToDoc = {};
       this.indexToDoc = {};
+      this.wipeDataFromDisk();
       console.log('Cleared the document store');
-      // now delete the saved files
-      await this.app.vault.adapter.remove(this.storagePath);
     }
 
 
@@ -264,15 +263,11 @@ export class DocumentStore {
     }
 
     public async similaritySearch(query: string, topK: number = 5): Promise<Array<SimilarityResult>> {
-     
       const queryVector: tf.Tensor2D = await this.encodeStringToVector(query)
       const totalNumberOfDocuments: number = this.maxDocId - this.docIdsMarkedForDeletion.size;
-      
       const nn : {label: string, classIndex: number, confidences: {[classId: number]: number}} = await this.knn.predictClass(queryVector, topK);
       const confidences : {[classId: number]: number} = nn.confidences;
-      
       let results: Array<{filePath: string, similarity: number, documentText: string}> = [];
-
       Object.keys(confidences).forEach(async classId => {
         const id: number = parseInt(classId);
         console.log(`classId: ${classId}, confidence: ${confidences[id]}`);

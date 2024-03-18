@@ -12,7 +12,7 @@ export default class AiChat extends Plugin {
 	filesToReprocess: Set<string> = new Set();;
 
 	async onload() {
-		await this.loadSettings();
+		// await this.loadSettings();
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat");
 		this.chatBox = new ChatBox(this.app, this);
 
@@ -35,11 +35,11 @@ export default class AiChat extends Plugin {
 			})
 		);
 
-
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'AI-Chat', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('This is a notice!');
+
 		});
 
 		this.addCommand({
@@ -63,13 +63,26 @@ export default class AiChat extends Plugin {
 
 		//add a command to add wipe the storage an reindex all the files
 		this.addCommand({
-			id: 'reindex-all-files',
+			id: 'Reindex-all-files',
 			name: 'Reindex All Files',
 			callback: () => {
 				this.documentStore.clear();
 				this.app.vault.getMarkdownFiles().forEach(file => this.documentStore.addDocumentPath(file.path));
 			}
 		})
+
+		// this.addCommand({
+		// 	id: 'Reindex-all-open-files',
+		// 	name: 'Reindex All Open Files',
+		// 	callback: () => {
+		// 		this.app.workspace.getLeavesOfType('markdown').forEach(leaf => {
+		// 			leaf.open(leaf.view);
+		// 			this.documentStore.removeDocumentPath(leaf.openFile());
+		// 			this.documentStore.addDocumentPath(leaf.view.file);
+		// 			}
+		// 		})
+		// 	}
+		// })
 
 
 		// Perform additional things with the ribbon
