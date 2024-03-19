@@ -1,10 +1,11 @@
 import AiChat from 'main';
 import { Notice } from 'obsidian';
 import { App, Plugin, TFile } from 'obsidian';
-import * as use from '@tensorflow-models/universal-sentence-encoder';
+// import * as use from '@tensorflow-models/universal-sentence-encoder';
 import * as tf from '@tensorflow/tfjs';
 import { DocumentChunk, Document, SimilarityResult} from 'types';
 import { assert } from 'console';
+import ollama, { EmbeddingsResponse } from 'ollama'
 // @ts-ignore
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
@@ -17,7 +18,7 @@ export class DocumentStore {
     private app: App;
 
     private plugin: AiChat;
-    
+    private modelName: string;
 
     private storagePath: string;
     private knn: any;
@@ -29,19 +30,18 @@ export class DocumentStore {
     private pointerStartOfDocId: number[];
     private docIdsMarkedForDeletion: Set<number>;
 
-    private model: use.UniversalSentenceEncoder;
-
     private maxDocId: number = -1;
     private maxChunkId: number = -1;
     private chunkSize: number;
     private overlap: number;
 
 
-    constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 1000, overlap: number = 200) {
+    constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 1000, overlap: number = 200, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
 
       this.knn = knnClassifier.create();
+      this.modelName=modelName;
 
       // Dicts
       this.filePathToDoc = {};
@@ -129,27 +129,16 @@ export class DocumentStore {
 
     }
 
-    public async testUse(): Promise<void>{
-      new Notice('START Loading the  Tokenizer ');
-      let tokenizer: void|number[] =  await use.loadTokenizer('https://storage.googleapis.com/learnjs-data/bert_vocab/vocab.json').then(tokenizer => {
-        tokenizer.encode('Hello, how are you?'); // [0, 15350, 29623, 2129, 2024, 2017, 29632]
-        } )
-      new Notice('DONE Loading the Tokenizer : ' + tokenizer);
-    }
-
-    public async loadmodel(): Promise<use.UniversalSentenceEncoder> {
-      // await this.testUse();
-      if (typeof(this.model) !== typeof(use.UniversalSentenceEncoder)) {
-        new Notice('Loading the Universal Sentence Encoder Model');
-        this.model = await use.load();
-        new Notice('Done Loading the Universal Sentence Encoder Model');
-      }
-      return this.model;
+    public async getOllamaTextEmbedding(input : string) : Promise<number[]> {
+         var response: EmbeddingsResponse = await ollama.embeddings({prompt: input, model: 'llama2'})
+         return response.embedding;
     }
 
     private async encodeStringToVector(text: string): Promise<tf.Tensor2D> {
-      const model = await this.loadmodel();
-      const embeddings: tf.Tensor2D = await model.embed([text]) as unknown as tf.Tensor2D;
+      const ollamaResponse : number[] = await this.getOllamaTextEmbedding(text)
+      console.log("ollamaResponse is : ")
+      console.log(ollamaResponse)
+      const embeddings: tf.Tensor2D = tf.tensor2d(ollamaResponse, [1, ollamaResponse.length]);
       return embeddings;
     }
 
@@ -176,6 +165,8 @@ export class DocumentStore {
         for await (const {id, text} of chunks) {
             this.maxChunkId += 1;
             const vector: tf.Tensor2D = await this.encodeStringToVector(text);
+            console.log("vector has been inferred, the shape is : ")
+            console.log(vector.shape)
             this.knn.addExample(vector, this.maxDocId);
             if (this.embeddedChunks === undefined || this.embeddedChunks.shape[0] === 0) {
                 this.embeddedChunks = vector.clone();
@@ -214,7 +205,7 @@ export class DocumentStore {
       this.maxChunkId = -1;
       this.filePathToDoc = {};
       this.indexToDoc = {};
-      this.wipeDataFromDisk();
+      // this.wipeDataFromDisk();
       console.log('Cleared the document store');
     }
 
