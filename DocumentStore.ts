@@ -15,7 +15,9 @@ export class DocumentStore {
     // they run within the "browser" of the obsidian app
 
     private app: App;
+
     private plugin: AiChat;
+    
 
     private storagePath: string;
     private knn: any;
