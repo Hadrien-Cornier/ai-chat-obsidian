@@ -13,7 +13,7 @@ export interface DocumentChunk {
     text: string;
 }
 
-export interface Document{
+export interface BasicDocument{
     id: number;
     file: TFile;
     pointer: number;

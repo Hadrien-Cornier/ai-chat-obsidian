@@ -3,11 +3,12 @@ import { Notice } from 'obsidian';
 import { App, Plugin, TFile } from 'obsidian';
 // import * as use from '@tensorflow-models/universal-sentence-encoder';
 import * as tf from '@tensorflow/tfjs';
-import { DocumentChunk, Document, SimilarityResult} from 'types';
+import { DocumentChunk, BasicDocument, SimilarityResult} from 'types';
 import { assert } from 'console';
 import ollama, { EmbeddingsResponse } from 'ollama'
 // @ts-ignore
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
+import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions } from 'llamaindex';
 
 
 export class DocumentStore {
@@ -23,8 +24,8 @@ export class DocumentStore {
     private storagePath: string;
     private knn: any;
 
-    private filePathToDoc: { [key: string]: Document };
-    private indexToDoc : { [key: number]: Document };
+    private filePathToDoc: { [key: string]: BasicDocument };
+    private indexToDoc : { [key: number]: BasicDocument };
 
     private embeddedChunks: tf.Tensor2D;
     private pointerStartOfDocId: number[];
@@ -35,8 +36,10 @@ export class DocumentStore {
     private chunkSize: number;
     private overlap: number;
 
+    private vectorStore: VectorStoreIndex;
+    private queryEngine : RetrieverQueryEngine;
 
-    constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 1000, overlap: number = 200, modelName: string = 'llama2') {
+    constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
 
@@ -58,10 +61,14 @@ export class DocumentStore {
       this.chunkSize = chunkSize;
       this.overlap = overlap;
       this.storagePath = storagePath;
+
+      // LLama Index
+      // this.vectorStore = await VectorStoreIndex.init({}); //Promise.resolve(VectorStoreIndex.init());
     
     }
   
-    onload() {
+    async onload() {
+      this.vectorStore = await VectorStoreIndex.init({});
     }
 
     onunload() {
@@ -145,6 +152,18 @@ export class DocumentStore {
     public addDocumentPath(filePath: string): void {
       this.addDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     }
+
+
+    public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document<Metadata>> {
+      const fileContent: string = await this.app.vault.read(file);
+      return new Document({ text: fileContent });
+    }
+
+    public async createLlamaVectorStoreFromTFiles(files: TFile[]): Promise<VectorStoreIndex> {
+      const llamaFiles = await Promise.all(files.map(async (file) => this.convertTFileToLlamaIndexDocument(file)));
+      const index = await VectorStoreIndex.fromDocuments(llamaFiles);
+      return index;
+    }
   
     public async addDocument(file: TFile): Promise<number> {
         const fileContent: string = await this.app.vault.read(file);
@@ -154,7 +173,7 @@ export class DocumentStore {
 
         this.maxDocId += 1;
                 
-        const currentDocument: Document = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
+        const currentDocument: BasicDocument = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
 
         this.filePathToDoc[file.path] = currentDocument;
         this.indexToDoc[this.maxDocId] = currentDocument;
@@ -184,7 +203,7 @@ export class DocumentStore {
     }
 
     public async removeDocument(file: TFile): Promise<void> {
-      const currentDocument: Document = this.filePathToDoc[file.path];
+      const currentDocument: BasicDocument = this.filePathToDoc[file.path];
       if (currentDocument != undefined) {
         this.docIdsMarkedForDeletion.add(currentDocument.id);
         this.knn.clearClass(currentDocument.id);
@@ -236,7 +255,7 @@ export class DocumentStore {
         for (let i = 0; i < this.pointerStartOfDocId.length; i++) {
           if (this.pointerStartOfDocId[i] > chunkId) {
             const docId: number = i - 1;
-            const currentDocument: Document = this.indexToDoc[docId];
+            const currentDocument: BasicDocument = this.indexToDoc[docId];
             const start: number = this.pointerStartOfDocId[docId];
             const chunkIndex: number = chunkId - start;
     

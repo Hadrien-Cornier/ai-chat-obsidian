@@ -71,6 +71,18 @@ export default class AiChat extends Plugin {
 			}
 		})
 
+		this.addCommand({
+			id: 'Reindex-current-file',
+			name: 'Reindex Current File',
+			callback: () => {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (activeFile) {
+					this.documentStore.removeDocumentPath(activeFile.path);
+					this.documentStore.addDocumentPath(activeFile.path);
+				}
+			}
+		})
+
 		// this.addCommand({
 		// 	id: 'Reindex-all-open-files',
 		// 	name: 'Reindex All Open Files',
