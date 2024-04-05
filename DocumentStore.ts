@@ -8,7 +8,7 @@ import { assert } from 'console';
 import ollama, { EmbeddingsResponse } from 'ollama'
 // @ts-ignore
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
-import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions } from 'llamaindex';
+import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, QueryEngine, ResponseSynthesizer } from 'llamaindex';
 
 
 export class DocumentStore {
@@ -21,46 +21,50 @@ export class DocumentStore {
     private plugin: AiChat;
     private modelName: string;
 
-    private storagePath: string;
-    private knn: any;
+    // private storagePath: string;
+    // private knn: any;
 
-    private filePathToDoc: { [key: string]: BasicDocument };
-    private indexToDoc : { [key: number]: BasicDocument };
+    // private filePathToDoc: { [key: string]: BasicDocument };
+    // private indexToDoc : { [key: number]: BasicDocument };
 
-    private embeddedChunks: tf.Tensor2D;
-    private pointerStartOfDocId: number[];
-    private docIdsMarkedForDeletion: Set<number>;
+    // private embeddedChunks: tf.Tensor2D;
+    // private pointerStartOfDocId: number[];
+    // private docIdsMarkedForDeletion: Set<number>;
 
-    private maxDocId: number = -1;
-    private maxChunkId: number = -1;
-    private chunkSize: number;
-    private overlap: number;
+    // private maxDocId: number = -1;
+    // private maxChunkId: number = -1;
+    // private chunkSize: number;
+    // private overlap: number;
 
-    private vectorStore: VectorStoreIndex;
+    private index: VectorStoreIndex;
     private queryEngine : RetrieverQueryEngine;
+    private storageContext: any;
+    private storagePath: string;
 
     constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
 
-      this.knn = knnClassifier.create();
-      this.modelName=modelName;
-
-      // Dicts
-      this.filePathToDoc = {};
-      this.indexToDoc = {};
-
-      // Tensors
-      this.embeddedChunks = tf.tensor2d([], [0, 0]);
-      this.pointerStartOfDocId = [];
-      this.docIdsMarkedForDeletion = new Set();
-
-      // Metadata
-      this.maxDocId = -1;
-      this.maxChunkId = -1;
-      this.chunkSize = chunkSize;
-      this.overlap = overlap;
       this.storagePath = storagePath;
+
+      // this.knn = knnClassifier.create();
+      // this.modelName=modelName;
+
+      // // Dicts
+      // this.filePathToDoc = {};
+      // this.indexToDoc = {};
+
+      // // Tensors
+      // this.embeddedChunks = tf.tensor2d([], [0, 0]);
+      // this.pointerStartOfDocId = [];
+      // this.docIdsMarkedForDeletion = new Set();
+
+      // // Metadata
+      // this.maxDocId = -1;
+      // this.maxChunkId = -1;
+      // this.chunkSize = chunkSize;
+      // this.overlap = overlap;
+      // this.storagePath = storagePath;
 
       // LLama Index
       // this.vectorStore = await VectorStoreIndex.init({}); //Promise.resolve(VectorStoreIndex.init());
@@ -68,57 +72,57 @@ export class DocumentStore {
     }
   
     async onload() {
-      this.vectorStore = await VectorStoreIndex.init({});
+      this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath});
+      this.index = await loadIndexFromStorage(this.storageContext)
+      this.queryEngine = this.index.asQueryEngine();
     }
 
     onunload() {
-      this.knn.dispose();
+      // this.knn.dispose();
     }
 
-    private async loadFromDisk(): Promise<void> {
-      // TODO   
-    }
-
-    private async saveJsonToFile(filePath: string, data: any): Promise<void> {
-        const fileContent: string = JSON.stringify(data, null, 2);
-        await this.app.vault.adapter.write(filePath, fileContent);
-      }
+    // private async saveJsonToFile(filePath: string, data: any): Promise<void> {
+    //     const fileContent: string = JSON.stringify(data, null, 2);
+    //     await this.app.vault.adapter.write(filePath, fileContent);
+    //   }
 
     public async persistToDisk(): Promise<void> {
 
+
+
       // classifier.getClassifierDataset()
-        try {
-          if (!this.app.vault.getAbstractFileByPath(this.storagePath)) {
-            await this.app.vault.createFolder(this.storagePath);
-          }
+        // try {
+        //   if (!this.app.vault.getAbstractFileByPath(this.storagePath)) {
+        //     await this.app.vault.createFolder(this.storagePath);
+        //   }
 
-          this.garbageCollect();
+        //   this.garbageCollect();
 
-          //Dicts
-          await this.saveJsonToFile(`${this.storagePath}/file_path_to_doc.json`, this.filePathToDoc);
-          await this.saveJsonToFile(`${this.storagePath}/index_to_doc.json`, this.indexToDoc);
+        //   //Dicts
+        //   await this.saveJsonToFile(`${this.storagePath}/file_path_to_doc.json`, this.filePathToDoc);
+        //   await this.saveJsonToFile(`${this.storagePath}/index_to_doc.json`, this.indexToDoc);
 
-          //Tensors
-          await this.saveJsonToFile(`${this.storagePath}/pointer_start_of_doc_id.json`, this.pointerStartOfDocId);
-          await this.saveJsonToFile(`${this.storagePath}/doc_ids_marked_for_deletion.json`, this.docIdsMarkedForDeletion);
-          await this.saveTfTensorToFile(`${this.storagePath}/embedded_chunks.bin`, this.embeddedChunks);
+        //   //Tensors
+        //   await this.saveJsonToFile(`${this.storagePath}/pointer_start_of_doc_id.json`, this.pointerStartOfDocId);
+        //   await this.saveJsonToFile(`${this.storagePath}/doc_ids_marked_for_deletion.json`, this.docIdsMarkedForDeletion);
+        //   await this.saveTfTensorToFile(`${this.storagePath}/embedded_chunks.bin`, this.embeddedChunks);
 
-          const metadata = {
-            maxDocId: this.maxDocId,
-            maxChunkId: this.maxChunkId,
-            chunkSize: this.chunkSize,
-            overlap: this.overlap,
-            storagePath: this.storagePath
-          };
+        //   const metadata = {
+        //     maxDocId: this.maxDocId,
+        //     maxChunkId: this.maxChunkId,
+        //     chunkSize: this.chunkSize,
+        //     overlap: this.overlap,
+        //     storagePath: this.storagePath
+        //   };
 
-          //Metadata
-          await this.saveJsonToFile(`${this.storagePath}/metadata.json`, metadata);
+        //   //Metadata
+        //   await this.saveJsonToFile(`${this.storagePath}/metadata.json`, metadata);
 
-          new Notice('Data successfully persisted to disk.');
-        } catch (error) {
-          console.error('Failed to persist data:', error);
-          new Notice('Error persisting data to disk.');
-        }
+        //   new Notice('Data successfully persisted to disk.');
+        // } catch (error) {
+        //   console.error('Failed to persist data:', error);
+        //   new Notice('Error persisting data to disk.');
+        // }
       }
 
     private async wipeDataFromDisk(): Promise<void> {
@@ -166,36 +170,41 @@ export class DocumentStore {
     }
   
     public async addDocument(file: TFile): Promise<number> {
-        const fileContent: string = await this.app.vault.read(file);
-        const chunks: IterableIterator<DocumentChunk> = this.chunkText(fileContent);
-        let chunkIndex: number = 0;
-        let isFirstChunk: boolean = true;
+        // const fileContent: string = await this.app.vault.read(file);
+        // const chunks: IterableIterator<DocumentChunk> = this.chunkText(fileContent);
+        // let chunkIndex: number = 0;
+        // let isFirstChunk: boolean = true;
 
-        this.maxDocId += 1;
+        // this.maxDocId += 1;
                 
-        const currentDocument: BasicDocument = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
+        // const currentDocument: BasicDocument = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
 
-        this.filePathToDoc[file.path] = currentDocument;
-        this.indexToDoc[this.maxDocId] = currentDocument;
+        // this.filePathToDoc[file.path] = currentDocument;
+        // this.indexToDoc[this.maxDocId] = currentDocument;
         
-        // add currentDocument.pointer to the pointer array
-        this.pointerStartOfDocId.push(currentDocument.pointer);
+        // // add currentDocument.pointer to the pointer array
+        // this.pointerStartOfDocId.push(currentDocument.pointer);
     
-        for await (const {id, text} of chunks) {
-            this.maxChunkId += 1;
-            const vector: tf.Tensor2D = await this.encodeStringToVector(text);
-            console.log("vector has been inferred, the shape is : ")
-            console.log(vector.shape)
-            this.knn.addExample(vector, this.maxDocId);
-            if (this.embeddedChunks === undefined || this.embeddedChunks.shape[0] === 0) {
-                this.embeddedChunks = vector.clone();
-            } else {
-                this.embeddedChunks = tf.concat([this.embeddedChunks, vector], 0);
-            }
-            chunkIndex++;
-        }
-        console.log(`Added ${chunkIndex} chunks from document: ${file.name}`);
-        return chunkIndex;
+        // for await (const {id, text} of chunks) {
+        //     this.maxChunkId += 1;
+        //     const vector: tf.Tensor2D = await this.encodeStringToVector(text);
+        //     console.log("vector has been inferred, the shape is : ")
+        //     console.log(vector.shape)
+        //     this.knn.addExample(vector, this.maxDocId);
+        //     if (this.embeddedChunks === undefined || this.embeddedChunks.shape[0] === 0) {
+        //         this.embeddedChunks = vector.clone();
+        //     } else {
+        //         this.embeddedChunks = tf.concat([this.embeddedChunks, vector], 0);
+        //     }
+        //     chunkIndex++;
+        // }
+        // console.log(`Added ${chunkIndex} chunks from document: ${file.name}`);
+        // return chunkIndex;
+        const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
+          // const additionalDocument = new Document({ text: additionalEssay, id_: additionalPath });
+
+        this.index.insert(llamaDocument);
+        this.queryEngine = this.index.asQueryEngine();
     }
 
     public async removeDocumentPath(filePath: string): Promise<void> {
@@ -292,3 +301,33 @@ export class DocumentStore {
 
 
 }
+
+
+function loadIndexFromStorage(storageContext: any): VectorStoreIndex | PromiseLike<VectorStoreIndex> {
+  throw new Error('Function not implemented.');
+}
+// TODO : WE WILL BE USING preFilters to filter Obsidian documents based on their tags !! 
+
+
+// import { VectorStoreIndex, VectorIndexAutoRetriever, MetadataInfo, VectorStoreInfo } from 'llamaindex';
+
+// // Define metadata information for documents
+// const vectorStoreInfo = new VectorStoreInfo({
+//   content_info: "Document content",
+//   metadata_info: [
+//     new MetadataInfo("category", "The category of the document", "string"),
+//     new MetadataInfo("author", "The author of the document", "string"),
+//   ],
+// });
+
+// // Initialize the auto retriever with the vector store information
+// const retriever = new VectorIndexAutoRetriever(index, { vectorStoreInfo });
+
+// // Perform the retrieval with preFilters
+// const response = retriever.retrieve("Latest research papers in AI", {
+//   preFilters: {
+//     category: 'AI Research'
+//   }
+// });
+
+// console.log(response);
