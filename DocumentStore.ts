@@ -8,7 +8,7 @@ import { assert } from 'console';
 import ollama, { EmbeddingsResponse } from 'ollama'
 // @ts-ignore
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
-import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, QueryEngine, ResponseSynthesizer } from 'llamaindex';
+import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, QueryEngine, ResponseSynthesizer, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
 
 
 export class DocumentStore {
@@ -40,12 +40,14 @@ export class DocumentStore {
     private queryEngine : RetrieverQueryEngine;
     private storageContext: any;
     private storagePath: string;
+    private nodePostprocessor: BaseNodePostprocessor;
 
     constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
 
       this.storagePath = storagePath;
+      this.nodePostprocessor = new CohereRerank({ apiKey: process.env.COHERE_API_KEY ?? null, topN: 4 });
 
       // this.knn = knnClassifier.create();
       // this.modelName=modelName;
@@ -140,21 +142,21 @@ export class DocumentStore {
 
     }
 
-    public async getOllamaTextEmbedding(input : string) : Promise<number[]> {
-         var response: EmbeddingsResponse = await ollama.embeddings({prompt: input, model: 'llama2'})
-         return response.embedding;
-    }
+    // public async getOllamaTextEmbedding(input : string) : Promise<number[]> {
+    //      var response: EmbeddingsResponse = await ollama.embeddings({prompt: input, model: 'llama2'})
+    //      return response.embedding;
+    // }
 
-    private async encodeStringToVector(text: string): Promise<tf.Tensor2D> {
-      const ollamaResponse : number[] = await this.getOllamaTextEmbedding(text)
-      console.log("ollamaResponse is : ")
-      console.log(ollamaResponse)
-      const embeddings: tf.Tensor2D = tf.tensor2d(ollamaResponse, [1, ollamaResponse.length]);
-      return embeddings;
-    }
+    // private async encodeStringToVector(text: string): Promise<tf.Tensor2D> {
+    //   const ollamaResponse : number[] = await this.getOllamaTextEmbedding(text)
+    //   console.log("ollamaResponse is : ")
+    //   console.log(ollamaResponse)
+    //   const embeddings: tf.Tensor2D = tf.tensor2d(ollamaResponse, [1, ollamaResponse.length]);
+    //   return embeddings;
+    // }
 
     public addDocumentPath(filePath: string): void {
-      this.addDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+      this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     }
 
 
@@ -169,142 +171,115 @@ export class DocumentStore {
       return index;
     }
   
-    public async addDocument(file: TFile): Promise<number> {
-        // const fileContent: string = await this.app.vault.read(file);
-        // const chunks: IterableIterator<DocumentChunk> = this.chunkText(fileContent);
-        // let chunkIndex: number = 0;
-        // let isFirstChunk: boolean = true;
-
-        // this.maxDocId += 1;
-                
-        // const currentDocument: BasicDocument = {id: this.maxDocId, file, pointer: this.embeddedChunks.shape[0]};
-
-        // this.filePathToDoc[file.path] = currentDocument;
-        // this.indexToDoc[this.maxDocId] = currentDocument;
-        
-        // // add currentDocument.pointer to the pointer array
-        // this.pointerStartOfDocId.push(currentDocument.pointer);
-    
-        // for await (const {id, text} of chunks) {
-        //     this.maxChunkId += 1;
-        //     const vector: tf.Tensor2D = await this.encodeStringToVector(text);
-        //     console.log("vector has been inferred, the shape is : ")
-        //     console.log(vector.shape)
-        //     this.knn.addExample(vector, this.maxDocId);
-        //     if (this.embeddedChunks === undefined || this.embeddedChunks.shape[0] === 0) {
-        //         this.embeddedChunks = vector.clone();
-        //     } else {
-        //         this.embeddedChunks = tf.concat([this.embeddedChunks, vector], 0);
-        //     }
-        //     chunkIndex++;
-        // }
-        // console.log(`Added ${chunkIndex} chunks from document: ${file.name}`);
-        // return chunkIndex;
+    public async addTfile(file: TFile): Promise<void> {
         const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
-          // const additionalDocument = new Document({ text: additionalEssay, id_: additionalPath });
-
         this.index.insert(llamaDocument);
         this.queryEngine = this.index.asQueryEngine();
+        this.queryEngine.nodePostprocessors = [this.nodePostprocessor];
     }
 
-    public async removeDocumentPath(filePath: string): Promise<void> {
-      this.removeDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+    public async respondToQuery(query: string): Promise<string> {
+      const response = await this.queryEngine.query({
+        query: query,
+      })
+      return response.toString();
     }
 
-    public async removeDocument(file: TFile): Promise<void> {
-      const currentDocument: BasicDocument = this.filePathToDoc[file.path];
-      if (currentDocument != undefined) {
-        this.docIdsMarkedForDeletion.add(currentDocument.id);
-        this.knn.clearClass(currentDocument.id);
-        console.log(`Removed document: ${file.name}`);
-      }
-      else {
-        console.log(`Skipping Remove because Document: ${file.name} does not exist in the document store`);
-      }
-    }
+    // public async removeDocumentPath(filePath: string): Promise<void> {
+    //   this.removeDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+    // }
+
+    // public async removeDocument(file: TFile): Promise<void> {
+    //   const currentDocument: BasicDocument = this.filePathToDoc[file.path];
+    //   if (currentDocument != undefined) {
+    //     this.docIdsMarkedForDeletion.add(currentDocument.id);
+    //     this.knn.clearClass(currentDocument.id);
+    //     console.log(`Removed document: ${file.name}`);
+    //   }
+    //   else {
+    //     console.log(`Skipping Remove because Document: ${file.name} does not exist in the document store`);
+    //   }
+    };
 
     //remove all documents
-    public async clear(): Promise<void> {
-      this.knn.clearAllClasses();
-      this.embeddedChunks = tf.tensor2d([], [0, 0]);
-      this.pointerStartOfDocId = [];
-      this.docIdsMarkedForDeletion = new Set();
-      this.maxDocId = -1;
-      this.maxChunkId = -1;
-      this.filePathToDoc = {};
-      this.indexToDoc = {};
-      // this.wipeDataFromDisk();
-      console.log('Cleared the document store');
-    }
+    // public async clear(): Promise<void> {
+    //   this.knn.clearAllClasses();
+    //   this.embeddedChunks = tf.tensor2d([], [0, 0]);
+    //   this.pointerStartOfDocId = [];
+    //   this.docIdsMarkedForDeletion = new Set();
+    //   this.maxDocId = -1;
+    //   this.maxChunkId = -1;
+    //   this.filePathToDoc = {};
+    //   this.indexToDoc = {};
+    //   // this.wipeDataFromDisk();
+    //   console.log('Cleared the document store');
+    // }
 
 
-    private async garbageCollect(): Promise<void> {
-      // TODO call this periodically to shift around the pointer values to remove the gaps
-      // we cannot update a modified file in place easily because it might have more chunks than before and overlap
-      // with the next file, so the robust way is to delete the old one and index the new and the GC
-      // will take care of cleaning up the gaps
-    }
+    // private async garbageCollect(): Promise<void> {
+    //   // TODO call this periodically to shift around the pointer values to remove the gaps
+    //   // we cannot update a modified file in place easily because it might have more chunks than before and overlap
+    //   // with the next file, so the robust way is to delete the old one and index the new and the GC
+    //   // will take care of cleaning up the gaps
+    // }
 
   
-    private *chunkText(text: string): IterableIterator<DocumentChunk> {
-        let startPos = 0;
-        while (startPos < text.length) {
-            const endPos: number = Math.min(startPos + this.chunkSize, text.length);
-            const chunkText: string = text.substring(startPos, endPos);
-            this.maxChunkId += 1;
-            startPos += this.chunkSize - this.overlap;
-            yield { id: this.maxChunkId, text: chunkText};
-        }
-    }
+    // private *chunkText(text: string): IterableIterator<DocumentChunk> {
+    //     let startPos = 0;
+    //     while (startPos < text.length) {
+    //         const endPos: number = Math.min(startPos + this.chunkSize, text.length);
+    //         const chunkText: string = text.substring(startPos, endPos);
+    //         this.maxChunkId += 1;
+    //         startPos += this.chunkSize - this.overlap;
+    //         yield { id: this.maxChunkId, text: chunkText};
+    //     }
+    // }
 
-    public getChunkText(chunkId: number): Promise<string> {
-      return new Promise((resolve, reject) => {
-        // Iterate through the pointer array to find the document that contains the chunk
-        // then do math on the document to find the chunk
-        for (let i = 0; i < this.pointerStartOfDocId.length; i++) {
-          if (this.pointerStartOfDocId[i] > chunkId) {
-            const docId: number = i - 1;
-            const currentDocument: BasicDocument = this.indexToDoc[docId];
-            const start: number = this.pointerStartOfDocId[docId];
-            const chunkIndex: number = chunkId - start;
+    // public getChunkText(chunkId: number): Promise<string> {
+    //   return new Promise((resolve, reject) => {
+    //     // Iterate through the pointer array to find the document that contains the chunk
+    //     // then do math on the document to find the chunk
+    //     for (let i = 0; i < this.pointerStartOfDocId.length; i++) {
+    //       if (this.pointerStartOfDocId[i] > chunkId) {
+    //         const docId: number = i - 1;
+    //         const currentDocument: BasicDocument = this.indexToDoc[docId];
+    //         const start: number = this.pointerStartOfDocId[docId];
+    //         const chunkIndex: number = chunkId - start;
     
-            this.app.vault.read(currentDocument.file).then((fileContent) => {
-              const chunks : Array<DocumentChunk> = Array.from(this.chunkText(fileContent));
-              if (chunkIndex < chunks.length) {
-                resolve(chunks[chunkIndex].text);
-              } else {
-                reject(new Error("Chunk index out of bounds"));
-              }
-            });
-            return;
-          }
-        }
-        reject(new Error("No document contains the specified chunkId"));
-      });
-    }
+    //         this.app.vault.read(currentDocument.file).then((fileContent) => {
+    //           const chunks : Array<DocumentChunk> = Array.from(this.chunkText(fileContent));
+    //           if (chunkIndex < chunks.length) {
+    //             resolve(chunks[chunkIndex].text);
+    //           } else {
+    //             reject(new Error("Chunk index out of bounds"));
+    //           }
+    //         });
+    //         return;
+    //       }
+    //     }
+    //     reject(new Error("No document contains the specified chunkId"));
+    //   });
+    // }
 
-    public async similaritySearch(query: string, topK: number = 5): Promise<Array<SimilarityResult>> {
-      const queryVector: tf.Tensor2D = await this.encodeStringToVector(query)
-      const totalNumberOfDocuments: number = this.maxDocId - this.docIdsMarkedForDeletion.size;
-      const nn : {label: string, classIndex: number, confidences: {[classId: number]: number}} = await this.knn.predictClass(queryVector, topK);
-      const confidences : {[classId: number]: number} = nn.confidences;
-      let results: Array<{filePath: string, similarity: number, documentText: string}> = [];
-      Object.keys(confidences).forEach(async classId => {
-        const id: number = parseInt(classId);
-        console.log(`classId: ${classId}, confidence: ${confidences[id]}`);
-        results.push({filePath: this.indexToDoc[id].file.path, similarity: confidences[id], documentText: await this.app.vault.read(this.indexToDoc[id].file)});
-      });
+    // public async similaritySearch(query: string, topK: number = 5): Promise<Array<SimilarityResult>> {
+    //   const queryVector: tf.Tensor2D = await this.encodeStringToVector(query)
+    //   const totalNumberOfDocuments: number = this.maxDocId - this.docIdsMarkedForDeletion.size;
+    //   const nn : {label: string, classIndex: number, confidences: {[classId: number]: number}} = await this.knn.predictClass(queryVector, topK);
+    //   const confidences : {[classId: number]: number} = nn.confidences;
+    //   let results: Array<{filePath: string, similarity: number, documentText: string}> = [];
+    //   Object.keys(confidences).forEach(async classId => {
+    //     const id: number = parseInt(classId);
+    //     console.log(`classId: ${classId}, confidence: ${confidences[id]}`);
+    //     results.push({filePath: this.indexToDoc[id].file.path, similarity: confidences[id], documentText: await this.app.vault.read(this.indexToDoc[id].file)});
+    //   });
 
-      return results;
+    //   return results;
 
-    }
-
-
-}
+    // }
 
 
 function loadIndexFromStorage(storageContext: any): VectorStoreIndex | PromiseLike<VectorStoreIndex> {
-  throw new Error('Function not implemented.');
+  return VectorStoreIndex.init({storageContext: storageContext});
 }
 // TODO : WE WILL BE USING preFilters to filter Obsidian documents based on their tags !! 
 

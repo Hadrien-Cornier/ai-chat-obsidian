@@ -62,14 +62,14 @@ export default class AiChat extends Plugin {
         })
 
 		//add a command to add wipe the storage an reindex all the files
-		this.addCommand({
-			id: 'Reindex-all-files',
-			name: 'Reindex All Files',
-			callback: () => {
-				this.documentStore.clear();
-				this.app.vault.getMarkdownFiles().forEach(file => this.documentStore.addDocumentPath(file.path));
-			}
-		})
+		// this.addCommand({
+		// 	id: 'Reindex-all-files',
+		// 	name: 'Reindex All Files',
+		// 	callback: () => {
+		// 		this.documentStore.clear();
+		// 		this.app.vault.getMarkdownFiles().forEach(file => this.documentStore.addDocumentPath(file.path));
+		// 	}
+		// })
 
 		this.addCommand({
 			id: 'Reindex-current-file',
@@ -77,7 +77,6 @@ export default class AiChat extends Plugin {
 			callback: () => {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (activeFile) {
-					this.documentStore.removeDocumentPath(activeFile.path);
 					this.documentStore.addDocumentPath(activeFile.path);
 				}
 			}

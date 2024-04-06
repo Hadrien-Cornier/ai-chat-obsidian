@@ -83,6 +83,17 @@ export class ChatBox extends Modal {
             // });
 
         contentEl.createEl('br');
+        const addDocumentButton = new ButtonComponent(contentEl)
+            .setButtonText('Add Document')
+            .onClick(() => {
+                // Simulate adding a document
+                if(this.app.workspace.getActiveFile()!=null){
+                    const tfile = this.app.workspace.getActiveFile();
+                    if (tfile != null) {
+                        this.docStore.addTfile(tfile);
+                    }
+                }
+            });
 
         const submitButton = new ButtonComponent(contentEl)
             .setButtonText('Ask')
@@ -101,14 +112,9 @@ export class ChatBox extends Modal {
         new Notice('This is a notice that we are answering!');
 
         // Now we get the documents that are relevant to the intent
-        let ragResults : SimilarityResult[] = await this.docStore.similaritySearch(question);
-        console.log(ragResults);
-        // new Notice('answer : ragResults ! ' + ragResults);
-        let resultPrompt: string = mapAndConcat(ragResults, convertSimlarityResultToPrompt) ;
-        // do a final prompt to extract the answer
-        let reply: string = await queryOllama(ultimateReply(resultPrompt, question)); ;
-        // TODO : for now this does not support streaming I believe
-        this.setOutputText(reply);
+        this.setOutputText(await this.docStore.respondToQuery(question));// . activation_function;
+        // this.        // TODO : for now this does not support streaming I believe
+        // this.setOutputText(reply);
     }
 
     private setOutputText(text: string): void {
