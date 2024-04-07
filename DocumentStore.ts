@@ -8,7 +8,7 @@ import { assert } from 'console';
 import ollama, { EmbeddingsResponse } from 'ollama'
 // @ts-ignore
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
-import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, QueryEngine, ResponseSynthesizer, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
+import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, ResponseSynthesizer, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
 
 
 export class DocumentStore {
