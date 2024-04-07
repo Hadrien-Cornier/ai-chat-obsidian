@@ -10,7 +10,7 @@ import ollama, { EmbeddingsResponse } from 'ollama'
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, ResponseSynthesizer, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
 
-
+const punycode = require('punycode/')
 export class DocumentStore {
 
     // Very simple document store using tensorflow.js WebGL accelerated KNN classifier and text embeddings
