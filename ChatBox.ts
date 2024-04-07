@@ -83,25 +83,25 @@ export class ChatBox extends Modal {
             // });
 
         contentEl.createEl('br');
-        const addDocumentButton = new ButtonComponent(contentEl)
-            .setButtonText('Add Document')
-            .onClick(() => {
-                // Simulate adding a document
-                if(this.app.workspace.getActiveFile()!=null){
-                    const tfile = this.app.workspace.getActiveFile();
-                    if (tfile != null) {
-                        this.docStore.addTfile(tfile);
-                    }
-                }
-            });
 
-        const submitButton = new ButtonComponent(contentEl)
-            .setButtonText('Ask')
-            .onClick(() => {
-                // Simulate asking a question
-                this.input.inputEl.dispatchEvent(new Event('change'));
-                this.answer(this.input.getValue());
-            });
+        // const submitButton = new ButtonComponent(contentEl)
+        //     .setButtonText('Ask')
+        //     .onClick(() => {
+        //         // Simulate asking a question
+        //         this.input.inputEl.dispatchEvent(new Event('change'));
+        //         this.answer(this.input.getValue());
+        //     });
+        const addDocumentButton = new ButtonComponent(contentEl)
+        .setButtonText('Add Document')
+        .onClick(() => {
+            // Simulate adding a document
+            if(this.app.workspace.getActiveFile()!=null){
+                const tfile = this.app.workspace.getActiveFile();
+                if (tfile != null) {
+                    this.docStore.addTfile(tfile);
+                }
+            }
+        });
 
         this.output = contentEl.createDiv();
         this.output.addClass('chat-output');
