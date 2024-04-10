@@ -20,6 +20,7 @@ const context = await esbuild.context({
 	platform: "node",
 	external: [
 		// "@tensorflow/tfjs",
+		"punycode",
 		"obsidian",
 		"electron",
 		"@codemirror/autocomplete",

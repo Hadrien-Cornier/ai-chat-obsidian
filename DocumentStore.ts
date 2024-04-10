@@ -1,16 +1,11 @@
 import AiChat from 'main';
 import { Notice } from 'obsidian';
-import { App, Plugin, TFile } from 'obsidian';
+import { App, TFile } from 'obsidian';
 // import * as use from '@tensorflow-models/universal-sentence-encoder';
 import * as tf from '@tensorflow/tfjs';
-import { DocumentChunk, BasicDocument, SimilarityResult} from 'types';
-import { assert } from 'console';
-import ollama, { EmbeddingsResponse } from 'ollama'
 // @ts-ignore
-import * as knnClassifier from '@tensorflow-models/knn-classifier';
-import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, VectorIndexOptions, storageContextFromDefaults, VectorIndexRetriever, ResponseSynthesizer, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
+import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, storageContextFromDefaults, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
 
-const punycode = require('punycode/')
 export class DocumentStore {
 
     // Very simple document store using tensorflow.js WebGL accelerated KNN classifier and text embeddings
@@ -19,7 +14,6 @@ export class DocumentStore {
     private app: App;
 
     private plugin: AiChat;
-    private modelName: string;
 
     // private storagePath: string;
     // private knn: any;
@@ -127,20 +121,8 @@ export class DocumentStore {
         // }
       }
 
-    private async wipeDataFromDisk(): Promise<void> {
-      await this.app.vault.adapter.remove(this.storagePath);
-      await this.app.vault.createFolder(this.storagePath)
-      new Notice('Data successfully wiped from disk.');
-    }
 
     
-    private async saveTfTensorToFile(filePath: string, tensor: tf.Tensor): Promise<void> {
-        tensor.data().then((typedArray) => {
-          const buffer: Buffer = Buffer.from(typedArray.buffer);
-          this.app.vault.adapter.writeBinary(filePath,buffer);
-        });
-
-    }
 
     // public async getOllamaTextEmbedding(input : string) : Promise<number[]> {
     //      var response: EmbeddingsResponse = await ollama.embeddings({prompt: input, model: 'llama2'})

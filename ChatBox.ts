@@ -1,8 +1,6 @@
 import {App, Modal, Notice, TextComponent, ButtonComponent} from 'obsidian';
 import {DocumentStore} from './DocumentStore';
 import AiChat from 'main';
-import { SimilarityResult } from 'types';
-import ollama from 'ollama'
 ////////////////////////////////////////////////////////////////////////
 // Export the OLLAMA_ORIGINS environment variable with a value of 
 // "app://obsidian.md*"
@@ -76,17 +74,6 @@ export class ChatBox extends Modal {
         //         this.input.inputEl.dispatchEvent(new Event('change'));
         //         this.answer(this.input.getValue());
         //     });
-        const addDocumentButton = new ButtonComponent(contentEl)
-        .setButtonText('Add Document')
-        .onClick(() => {
-            // Simulate adding a document
-            if(this.app.workspace.getActiveFile()!=null){
-                const tfile = this.app.workspace.getActiveFile();
-                if (tfile != null) {
-                    this.docStore.addTfile(tfile);
-                }
-            }
-        });
         contentEl.createEl('br');
 
         this.output = contentEl.createDiv();
@@ -94,18 +81,7 @@ export class ChatBox extends Modal {
     }
 
 
-    private async answer(question: string): Promise<void> {
-        new Notice('This is a notice that we are answering!');
 
-        // Now we get the documents that are relevant to the intent
-        this.setOutputText(await this.docStore.respondToQuery(question));// . activation_function;
-        // this.        // TODO : for now this does not support streaming I believe
-        // this.setOutputText(reply);
-    }
-
-    private setOutputText(text: string): void {
-        this.output.setText(text);
-    }
 
     onClose() {
         let {contentEl} = this;

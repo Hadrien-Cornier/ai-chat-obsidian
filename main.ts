@@ -1,4 +1,4 @@
-import { App, TFile , Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TextComponent, ButtonComponent } from 'obsidian';
+import { App, TFile , Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DocumentStore } from './DocumentStore';
 import { ChatBox } from './ChatBox';
 import { AiChatSettings, DEFAULT_SETTINGS } from './types';
@@ -50,16 +50,16 @@ export default class AiChat extends Plugin {
             }
         })
 
-		this.addCommand({
-			// this is not robust to a restart of the app
-			// more robust to check if the file has been indexed
-			id: 'index-new-files',
-			name: 'Index New Files',
-			callback: () => {
-				this.filesToReprocess.forEach(filePath => this.documentStore.removeDocumentPath(filePath));
-				this.filesToReprocess.forEach(filePath => this.documentStore.addDocumentPath(filePath));
-            }
-        })
+		// this.addCommand({
+		// 	// this is not robust to a restart of the app
+		// 	// more robust to check if the file has been indexed
+		// 	id: 'index-new-files',
+		// 	name: 'Index New Files',
+		// 	callback: () => {
+		// 		this.filesToReprocess.forEach(filePath => this.documentStore.(filePath));
+		// 		this.filesToReprocess.forEach(filePath => this.documentStore.addDocumentPath(filePath));
+        //     }
+        // })
 
 		//add a command to add wipe the storage an reindex all the files
 		// this.addCommand({
@@ -155,11 +155,6 @@ export default class AiChat extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-
-	// function that resets the memory of the plugin
-	async clear() {
-	  this.documentStore.clear();
 	}
 
 	// async getListOfNonIndexedFiles() {
