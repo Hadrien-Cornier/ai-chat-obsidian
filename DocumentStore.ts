@@ -1,4 +1,4 @@
-import AiChat from 'main';
+import AiChat from './main';
 import { Notice } from 'obsidian';
 import { App, TFile } from 'obsidian';
 // import * as use from '@tensorflow-models/universal-sentence-encoder';

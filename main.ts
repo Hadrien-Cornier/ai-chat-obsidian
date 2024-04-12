@@ -1,4 +1,4 @@
-import { App, TFile , Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, MarkdownFileInfo } from 'obsidian';
+import { App, TFile , Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DocumentStore } from './DocumentStore';
 import { ChatBox } from './ChatBox';
 import { AiChatSettings, DEFAULT_SETTINGS } from './types';
@@ -18,22 +18,22 @@ export default class AiChat extends Plugin {
 
 	
 
-		this.registerEvent(
-			this.app.vault.on('create', (file: TFile) => {
-				// if (file instanceof TFile && file.extension === 'md') {
-				// 	this.filesToReprocess.add(file.path);
-				// }
-			})
-		);
+		// this.registerEvent(
+		// 	this.app.vault.on('create', (file: TFile) => {
+		// 		// if (file instanceof TFile && file.extension === 'md') {
+		// 		// 	this.filesToReprocess.add(file.path);
+		// 		// }
+		// 	})
+		// );
 		
-		this.registerEvent(
-			this.app.vault.on('modify', (file: TFile) => {
-				// if (file instanceof TFile && file.extension === 'md') {
-				// 	// TODO : optimize this so that we do not reinfer the file if we only modify one bit of it
-				// 	this.filesToReprocess.add(file.path);
-				// }
-			})
-		);
+		// this.registerEvent(
+		// 	this.app.vault.on('modify', (file: TFile) => {
+		// 		// if (file instanceof TFile && file.extension === 'md') {
+		// 		// 	// TODO : optimize this so that we do not reinfer the file if we only modify one bit of it
+		// 		// 	this.filesToReprocess.add(file.path);
+		// 		// }
+		// 	})
+		// );
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'AI-Chat', (evt: MouseEvent) => {

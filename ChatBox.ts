@@ -1,6 +1,6 @@
 import {App, Modal, Notice, TextComponent, ButtonComponent} from 'obsidian';
 import {DocumentStore} from './DocumentStore';
-import AiChat from 'main';
+import AiChat from './main';
 ////////////////////////////////////////////////////////////////////////
 // Export the OLLAMA_ORIGINS environment variable with a value of 
 // "app://obsidian.md*"
