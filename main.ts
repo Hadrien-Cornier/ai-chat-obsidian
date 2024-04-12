@@ -1,4 +1,4 @@
-import { App, TFile , Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, TFile , Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, MarkdownFileInfo } from 'obsidian';
 import { DocumentStore } from './DocumentStore';
 import { ChatBox } from './ChatBox';
 import { AiChatSettings, DEFAULT_SETTINGS } from './types';
@@ -20,18 +20,18 @@ export default class AiChat extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on('create', (file: TFile) => {
-				if (file instanceof TFile && file.extension === 'md') {
-					this.filesToReprocess.add(file.path);
-				}
+				// if (file instanceof TFile && file.extension === 'md') {
+				// 	this.filesToReprocess.add(file.path);
+				// }
 			})
 		);
 		
 		this.registerEvent(
 			this.app.vault.on('modify', (file: TFile) => {
-				if (file instanceof TFile && file.extension === 'md') {
-					// TODO : optimize this so that we do not reinfer the file if we only modify one bit of it
-					this.filesToReprocess.add(file.path);
-				}
+				// if (file instanceof TFile && file.extension === 'md') {
+				// 	// TODO : optimize this so that we do not reinfer the file if we only modify one bit of it
+				// 	this.filesToReprocess.add(file.path);
+				// }
 			})
 		);
 
@@ -39,7 +39,6 @@ export default class AiChat extends Plugin {
 		const ribbonIconEl = this.addRibbonIcon('dice', 'AI-Chat', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('This is a notice!');
-
 		});
 
 		this.addCommand({
@@ -104,14 +103,17 @@ export default class AiChat extends Plugin {
 		statusBarItemEl.setText('Status Bar Text');
 
 		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
+		
+		// TODO : WE could imagine an editor command to get the llm to autocomplete the current line
+
+		// this.addCommand({
+		// 	id: 'sample-editor-command',
+		// 	name: 'Sample editor command',
+		// 	editorCallback: (editor: Editor, view: MarkdownView | MarkdownFileInfo) => {
+		// 		console.log(editor.getSelection());
+		// 		editor.replaceSelection('Sample Editor Command');
+		// 	}
+		// });
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		// this.addCommand({
 		// 	id: 'open-sample-modal-complex',
@@ -186,6 +188,19 @@ class SampleSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 
 		containerEl.empty();
+
+		new Setting(containerEl)
+		.setName('Cohere API Key')
+		.setDesc('Cohere API Key')
+		.addSearch((search) => {
+			search
+				.setPlaceholder('API Key')
+				.setValue(this.plugin.settings.selectedOption)
+				.onChange((value) => {
+					this.plugin.settings.selectedOption = value;
+					this.plugin.saveSettings();
+				});
+		});
 
 		new Setting(containerEl)
 			.setName('Select LLM Model')
