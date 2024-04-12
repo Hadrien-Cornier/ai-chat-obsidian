@@ -35,14 +35,14 @@ export class DocumentStore {
     private queryEngine : RetrieverQueryEngine;
     private storageContext: any;
     private storagePath: string;
-    private nodePostprocessor: BaseNodePostprocessor;
+    // private nodePostprocessor: BaseNodePostprocessor;
 
     constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
 
       this.storagePath = storagePath;
-      this.nodePostprocessor = new CohereRerank({ apiKey: process.env.COHERE_API_KEY ?? null, topN: 4 });
+      // this.nodePostprocessor = new CohereRerank({ apiKey: process.env.COHERE_API_KEY ?? null, topN: 4 });
 
       // this.knn = knnClassifier.create();
       // this.modelName=modelName;
@@ -70,7 +70,7 @@ export class DocumentStore {
   
     async onload() {
       this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath});
-      this.index = await loadIndexFromStorage(this.storageContext)
+      this.index = await loadIndexFromStorage(this.storageContext);
       this.queryEngine = this.index.asQueryEngine();
     }
 
@@ -153,21 +153,27 @@ export class DocumentStore {
       const index = await VectorStoreIndex.fromDocuments(llamaFiles);
       return index;
     }
+
+    public async initalizeIndex(): Promise<void> {
+      this.index = await VectorStoreIndex.init({});
+      this.queryEngine = this.index.asQueryEngine();
+    }
   
     public async addTfile(file: TFile): Promise<void> {
+        //if no index then initialize it
+        if (!this.index) {
+          await this.initalizeIndex();
+        }
         const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
         this.index.insert(llamaDocument);
         this.queryEngine = this.index.asQueryEngine();
-        this.queryEngine.nodePostprocessors = [this.nodePostprocessor];
+        // this.queryEngine.nodePostprocessors = [this.nodePostprocessor];
     }
 
     public async respondToQuery(query: string): Promise<string> {
-      const response = await this.queryEngine.query({
-        query: query,
-      })
+      const response = await this.queryEngine.query({query: query,});
       return response.toString();
     }
-
     // public async removeDocumentPath(filePath: string): Promise<void> {
     //   this.removeDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     // }
