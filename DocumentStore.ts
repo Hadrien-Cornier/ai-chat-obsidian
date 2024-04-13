@@ -40,108 +40,25 @@ export class DocumentStore {
     constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
-
       this.storagePath = storagePath;
       // this.nodePostprocessor = new CohereRerank({ apiKey: process.env.COHERE_API_KEY ?? null, topN: 4 });
-
-      // this.knn = knnClassifier.create();
-      // this.modelName=modelName;
-
-      // // Dicts
-      // this.filePathToDoc = {};
-      // this.indexToDoc = {};
-
-      // // Tensors
-      // this.embeddedChunks = tf.tensor2d([], [0, 0]);
-      // this.pointerStartOfDocId = [];
-      // this.docIdsMarkedForDeletion = new Set();
-
-      // // Metadata
-      // this.maxDocId = -1;
-      // this.maxChunkId = -1;
-      // this.chunkSize = chunkSize;
-      // this.overlap = overlap;
-      // this.storagePath = storagePath;
-
-      // LLama Index
-      // this.vectorStore = await VectorStoreIndex.init({}); //Promise.resolve(VectorStoreIndex.init());
-    
     }
   
     async onload() {
       this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath});
-      this.index = await loadIndexFromStorage(this.storageContext);
+      this.index = await this.loadIndexFromStorage(this.storageContext);
       this.queryEngine = this.index.asQueryEngine();
     }
 
     onunload() {
-      // this.knn.dispose();
     }
 
-    // private async saveJsonToFile(filePath: string, data: any): Promise<void> {
-    //     const fileContent: string = JSON.stringify(data, null, 2);
-    //     await this.app.vault.adapter.write(filePath, fileContent);
-    //   }
-
     public async persistToDisk(): Promise<void> {
-
-
-
-      // classifier.getClassifierDataset()
-        // try {
-        //   if (!this.app.vault.getAbstractFileByPath(this.storagePath)) {
-        //     await this.app.vault.createFolder(this.storagePath);
-        //   }
-
-        //   this.garbageCollect();
-
-        //   //Dicts
-        //   await this.saveJsonToFile(`${this.storagePath}/file_path_to_doc.json`, this.filePathToDoc);
-        //   await this.saveJsonToFile(`${this.storagePath}/index_to_doc.json`, this.indexToDoc);
-
-        //   //Tensors
-        //   await this.saveJsonToFile(`${this.storagePath}/pointer_start_of_doc_id.json`, this.pointerStartOfDocId);
-        //   await this.saveJsonToFile(`${this.storagePath}/doc_ids_marked_for_deletion.json`, this.docIdsMarkedForDeletion);
-        //   await this.saveTfTensorToFile(`${this.storagePath}/embedded_chunks.bin`, this.embeddedChunks);
-
-        //   const metadata = {
-        //     maxDocId: this.maxDocId,
-        //     maxChunkId: this.maxChunkId,
-        //     chunkSize: this.chunkSize,
-        //     overlap: this.overlap,
-        //     storagePath: this.storagePath
-        //   };
-
-        //   //Metadata
-        //   await this.saveJsonToFile(`${this.storagePath}/metadata.json`, metadata);
-
-        //   new Notice('Data successfully persisted to disk.');
-        // } catch (error) {
-        //   console.error('Failed to persist data:', error);
-        //   new Notice('Error persisting data to disk.');
-        // }
       }
-
-
-    
-
-    // public async getOllamaTextEmbedding(input : string) : Promise<number[]> {
-    //      var response: EmbeddingsResponse = await ollama.embeddings({prompt: input, model: 'llama2'})
-    //      return response.embedding;
-    // }
-
-    // private async encodeStringToVector(text: string): Promise<tf.Tensor2D> {
-    //   const ollamaResponse : number[] = await this.getOllamaTextEmbedding(text)
-    //   console.log("ollamaResponse is : ")
-    //   console.log(ollamaResponse)
-    //   const embeddings: tf.Tensor2D = tf.tensor2d(ollamaResponse, [1, ollamaResponse.length]);
-    //   return embeddings;
-    // }
 
     public addDocumentPath(filePath: string): void {
       this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     }
-
 
     public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document<Metadata>> {
       const fileContent: string = await this.app.vault.read(file);
@@ -158,6 +75,10 @@ export class DocumentStore {
       this.index = await VectorStoreIndex.init({});
       this.queryEngine = this.index.asQueryEngine();
     }
+
+    public async getTotalNumberOfIndexedDocuments(): Promise<number> {
+      return this.index.;
+    }
   
     public async addTfile(file: TFile): Promise<void> {
         //if no index then initialize it
@@ -170,10 +91,10 @@ export class DocumentStore {
         // this.queryEngine.nodePostprocessors = [this.nodePostprocessor];
     }
 
-    public async respondToQuery(query: string): Promise<string> {
-      const response = await this.queryEngine.query({query: query,});
-      return response.toString();
+    public loadIndexFromStorage(storageContext: any): PromiseLike<VectorStoreIndex> {
+      return VectorStoreIndex.init({storageContext: storageContext});
     }
+
     // public async removeDocumentPath(filePath: string): Promise<void> {
     //   this.removeDocument(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     // }
@@ -267,9 +188,6 @@ export class DocumentStore {
     // }
 
 
-function loadIndexFromStorage(storageContext: any): VectorStoreIndex | PromiseLike<VectorStoreIndex> {
-  return VectorStoreIndex.init({storageContext: storageContext});
-}
 // TODO : WE WILL BE USING preFilters to filter Obsidian documents based on their tags !! 
 
 
