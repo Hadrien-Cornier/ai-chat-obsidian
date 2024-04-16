@@ -38,7 +38,6 @@ export default class AiChat extends Plugin {
 				if (activeFile) {
 					this.documentStore.addDocumentPath(activeFile.path);
 					new Notice('Reindexed current file !');
-					// new Notice('Number of indexed files : ' + this.documentStore.);
 				}
 			}
 		})
