@@ -55,8 +55,8 @@ export class DocumentStore {
       return index;
     }
 
-    public async initalizeIndex(): Promise<void> {
-      this.index = await VectorStoreIndex.init({});
+    public async initalizeIndex(llamaDocument: Document): Promise<void> {
+      this.index = await VectorStoreIndex.fromDocuments([llamaDocument]);
       this.queryEngine = this.index.asQueryEngine();
     }
 
@@ -66,13 +66,13 @@ export class DocumentStore {
   
     public async addTfile(file: TFile): Promise<void> {
         //if no index then initialize it
-        if (!this.index) {
-          await this.initalizeIndex();
-        }
         const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
-        this.index.insert(llamaDocument);
+        if (!this.index) {
+          await this.initalizeIndex(llamaDocument);
+        } else {
+          this.index.insert(llamaDocument);
+        }
         this.queryEngine = this.index.asQueryEngine();
-        // this.queryEngine.nodePostprocessors = [this.nodePostprocessor];
     }
 
     public loadIndexFromStorage(storageContext: any): PromiseLike<VectorStoreIndex> {
