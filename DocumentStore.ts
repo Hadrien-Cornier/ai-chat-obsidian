@@ -2,7 +2,6 @@ import AiChat from './main';
 import { Notice } from 'obsidian';
 import { App, TFile } from 'obsidian';
 // import * as use from '@tensorflow-models/universal-sentence-encoder';
-import * as tf from '@tensorflow/tfjs';
 // @ts-ignore
 // const punycode = require('punycode/');
 import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, storageContextFromDefaults, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
