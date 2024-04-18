@@ -4,7 +4,8 @@ import { App, TFile } from 'obsidian';
 // import * as use from '@tensorflow-models/universal-sentence-encoder';
 // @ts-ignore
 // const punycode = require('punycode/');
-import { Document, Metadata, RetrieverQueryEngine, VectorStoreIndex, storageContextFromDefaults, CohereRerank, BaseNodePostprocessor } from 'llamaindex';
+import { Ollama, Settings, Document,Response, Metadata, RetrieverQueryEngine, VectorStoreIndex, storageContextFromDefaults, CohereRerank, BaseNodePostprocessor, OllamaEmbedding } from 'llamaindex';
+// import { OllamaLLM, OllamaEmbedding } from './OllamaModels';
 
 export class DocumentStore {
 
@@ -24,13 +25,23 @@ export class DocumentStore {
       this.app = app;
       this.plugin = plugin;
       this.storagePath = storagePath;
+
+      // const ollamaBaseUrl = 'http://localhost:11434'; // Adjust as necessary
+      // const llm = new OllamaLLM(ollamaBaseUrl);
+
+      // const serviceContext = {
+      //     llmPredictor: llm,
+      //     embedModel: embedding
+      // };
+
+      // const vectorStoreIndex = VectorStoreIndex.fromDocuments(documents, serviceContext);
       // this.nodePostprocessor = new CohereRerank({ apiKey: process.env.COHERE_API_KEY ?? null, topN: 4 });
     }
   
     async onload() {
-      this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath});
-      this.index = await this.loadIndexFromStorage(this.storageContext);
-      this.queryEngine = this.index.asQueryEngine();
+      // this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath});
+      // this.index = await this.loadIndexFromStorage(this.storageContext);
+      // this.queryEngine = this.index.asQueryEngine();
     }
 
     onunload() {
@@ -55,6 +66,8 @@ export class DocumentStore {
     }
 
     public async initalizeIndex(llamaDocument: Document): Promise<void> {
+      Settings.llm = new Ollama({ model: "llama2" });
+      Settings.embedModel = new OllamaEmbedding({ model: "llama2" });
       this.index = await VectorStoreIndex.fromDocuments([llamaDocument]);
       this.queryEngine = this.index.asQueryEngine();
     }
@@ -78,7 +91,7 @@ export class DocumentStore {
       return VectorStoreIndex.init({storageContext: storageContext});
     }
 
-    public async query(query: string): Promise<string> {
-      return (await this.queryEngine.query({ query: query })).response;
+    public async answer(prompt: string): Promise<Response> {
+      return this.queryEngine.query({ query: prompt });
     }
    };

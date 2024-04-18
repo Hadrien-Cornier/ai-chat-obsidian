@@ -1,6 +1,7 @@
 import {App, Modal, Notice, TextComponent, ButtonComponent} from 'obsidian';
 import {DocumentStore} from './DocumentStore';
 import AiChat from './main';
+import { Document } from 'llamaindex';
 
 export class ChatBox extends Modal {
     private input: TextComponent;
@@ -23,23 +24,23 @@ export class ChatBox extends Modal {
             .setPlaceholder('Type your question here...')
 
         contentEl.createEl('br');
+        this.output = contentEl.createDiv();
+        this.output.addClass('chat-output');
 
         const submitButton = new ButtonComponent(contentEl)
             .setButtonText('Ask')
-            .onClick(() => {
-                // Simulate asking a question
+            .onClick(async () => {
                 this.input.inputEl.dispatchEvent(new Event('change'));
-                this.answer(this.input.getValue());
+                let answer = await this.answer(this.input.getValue());
+                this.output.setText(answer);
             });
         contentEl.createEl('br');
-
-        this.output = contentEl.createDiv();
-        this.output.addClass('chat-output');
     }
 
-    async answer(prompt: string) {
+    async answer(prompt: string) : Promise<string> {
         // const response = await query
-        const response = await this.docStore.query(prompt);
+        const response = await this.docStore.answer(prompt);
+        return response.response;
     }    
 
 

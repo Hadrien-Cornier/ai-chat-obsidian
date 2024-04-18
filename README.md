@@ -15,6 +15,9 @@ and then
 
 ```comment_out node_modules/llamaindex/dist/storage/vectorStore/MongoDBAtlasVectorStore.js```
 
+also if ollama request is blocked because of CORS, you can do this : 
+
+```export OLLAMA_ORIGINS="*"```
 # Upcoming features
 - filter documents based on tags before starting the RAG process
 - add editor command to rewrite selection with the llm
