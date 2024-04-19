@@ -9,7 +9,7 @@ export default class AiChat extends Plugin {
 	settings: AiChatSettings;
 	documentStore: DocumentStore;
 	chatBox: ChatBox;
-	filesToReprocess: Set<string> = new Set();;
+	filesToReprocess: Set<string> = new Set();
 
 	async onload() {
 		// await this.loadSettings();
@@ -18,9 +18,19 @@ export default class AiChat extends Plugin {
 		this.chatBox = new ChatBox(this.app, this);
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'AI-Chat', (evt: MouseEvent) => {
+		const ribbonIconElChat = this.addRibbonIcon('message-square' , 'AI-Chat', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+			new Notice('Welcome to AI Chat!');
+			this.chatBox.open();
+		});
+
+		const ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', (evt: MouseEvent) => {
+			// Called when the user clicks the icon.
+			const activeFile = this.app.workspace.getActiveFile();	
+			if (activeFile) {
+				this.documentStore.addDocumentPath(activeFile.path);
+				new Notice('Reindexed current file !');	
+			}
 		});
 
 		this.addCommand({
@@ -43,7 +53,7 @@ export default class AiChat extends Plugin {
 		})
 
 		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		ribbonIconElIndex.addClass('current-file-indexed');
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
@@ -86,7 +96,7 @@ export default class AiChat extends Plugin {
 		new Notice('This is a notice that we are processing 2!');
         // Example: generateEmbeddingAndIndex(content, file.path);
     }
-}``
+}
 
 class SampleSettingTab extends PluginSettingTab {
 	plugin: AiChat;
