@@ -29,7 +29,8 @@ export default class AiChat extends Plugin {
 			const activeFile = this.app.workspace.getActiveFile();	
 			if (activeFile) {
 				this.documentStore.addDocumentPath(activeFile.path);
-				new Notice('Reindexed current file !');	
+				const numberOfDocuments = this.documentStore.getTotalNumberOfIndexedDocuments();
+				new Notice('Reindexed current file ! Total number of indexed documents indexed: ' + numberOfDocuments);
 			}
 		});
 

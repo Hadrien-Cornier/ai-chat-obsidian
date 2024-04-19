@@ -70,10 +70,14 @@ export class DocumentStore {
       Settings.embedModel = new OllamaEmbedding({ model: "llama2" });
       this.index = await VectorStoreIndex.fromDocuments([llamaDocument]);
       this.queryEngine = this.index.asQueryEngine();
+	    console.log("Index initialized");
     }
 
-    public async getTotalNumberOfIndexedDocuments(): Promise<number> {
-      return Promise.resolve(0);
+    public getTotalNumberOfIndexedDocuments(): number {
+		if (this.index) {
+			return Object.keys(this.index.docStore.getAllDocumentHashes()).length;
+		}
+        return 0;
     }
   
     public async addTfile(file: TFile): Promise<void> {
@@ -92,6 +96,10 @@ export class DocumentStore {
     }
 
     public async answer(prompt: string): Promise<Response> {
+		if (!this.queryEngine) {
+			new Notice("No documents indexed yet. Please index some documents first.");
+			return new Response("No documents indexed yet. Please index some documents first.");
+		}
       return this.queryEngine.query({ query: prompt });
     }
    };

@@ -18,11 +18,15 @@ and then
 also if ollama request is blocked because of CORS, you can do this : 
 
 ```export OLLAMA_ORIGINS="*"```
+
+# Completed features 
+- [X] use an icon to open up the chatbot
+- [ ] add number of documents indexed 
+
 # Upcoming features
-- make the chat look better
-- use the dice to open up the chatbot
-- ability to ask questions within a page
-- add number of documents indexed 
-- filter documents based on tags before starting the RAG process
-- add editor command to rewrite selection with the llm
-- add editor command to autocomplete the current line with llms
+- [ ] make the chat look better
+- [ ] add tool that can query the internet for information
+- [ ] ability to ask questions within a page
+- [ ] filter documents based on tags before starting the RAG conversation
+- [ ] add editor command to rewrite selection with the llm
+- [ ] add editor command to autocomplete the current line with llms

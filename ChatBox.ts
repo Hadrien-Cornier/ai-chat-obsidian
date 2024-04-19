@@ -31,6 +31,7 @@ export class ChatBox extends Modal {
             .setButtonText('Ask')
             .onClick(async () => {
                 this.input.inputEl.dispatchEvent(new Event('change'));
+				console.log("Asking question: " + this.input.getValue());
                 let answer = await this.answer(this.input.getValue());
                 this.output.setText(answer);
             });
