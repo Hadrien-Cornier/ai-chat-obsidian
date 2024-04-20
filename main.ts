@@ -24,12 +24,11 @@ export default class AiChat extends Plugin {
 			this.chatBox.open();
 		});
 
-		const ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', (evt: MouseEvent) => {
+		const ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			const activeFile = this.app.workspace.getActiveFile();	
 			if (activeFile) {
-				this.documentStore.addDocumentPath(activeFile.path);
-				const numberOfDocuments = this.documentStore.getTotalNumberOfIndexedDocuments();
+				const numberOfDocuments = await this.documentStore.addDocumentPath(activeFile.path);
 				new Notice('Reindexed current file ! Total number of indexed documents indexed: ' + numberOfDocuments);
 			}
 		});

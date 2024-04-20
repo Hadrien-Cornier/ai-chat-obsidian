@@ -30,3 +30,5 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] filter documents based on tags before starting the RAG conversation
 - [ ] add editor command to rewrite selection with the llm
 - [ ] add editor command to autocomplete the current line with llms
+- [ ] use Promise.all(...) to insert all documents with a command
+- [ ] figure out a way to report progress to the user of the indexing time left

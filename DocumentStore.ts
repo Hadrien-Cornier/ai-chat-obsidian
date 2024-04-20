@@ -50,8 +50,8 @@ export class DocumentStore {
     public async persistToDisk(): Promise<void> {
       }
 
-    public addDocumentPath(filePath: string): void {
-      this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+    public async addDocumentPath(filePath: string): Promise<number> {
+      return await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     }
 
     public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document<Metadata>> {
@@ -73,23 +73,27 @@ export class DocumentStore {
 	    console.log("Index initialized");
     }
 
-    public getTotalNumberOfIndexedDocuments(): number {
+    public async getTotalNumberOfIndexedDocuments(): Promise<number> {
 		if (this.index) {
-			return Object.keys(this.index.docStore.getAllDocumentHashes()).length;
+			const docRecord = await this.index.docStore.getAllDocumentHashes();
+			const documentList = Object.keys(docRecord);
+			console.log("retrieved document list from the vector index")
+			return documentList.length;
 		}
         return 0;
     }
   
-    public async addTfile(file: TFile): Promise<void> {
-        //if no index then initialize it
-        const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
-        if (!this.index) {
-          await this.initalizeIndex(llamaDocument);
-        } else {
-          this.index.insert(llamaDocument);
-        }
-        this.queryEngine = this.index.asQueryEngine();
-    }
+    public async addTfile(file: TFile): Promise<number> {
+		//if no index then initialize it
+		const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
+		if (!this.index) {
+			await this.initalizeIndex(llamaDocument);
+		}
+		await this.index.insert(llamaDocument);
+		this.queryEngine = this.index.asQueryEngine();
+		console.log("inserted llamaDocument into index")
+		return this.getTotalNumberOfIndexedDocuments();
+	}
 
     public loadIndexFromStorage(storageContext: any): PromiseLike<VectorStoreIndex> {
       return VectorStoreIndex.init({storageContext: storageContext});
