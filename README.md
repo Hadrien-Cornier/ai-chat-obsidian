@@ -32,3 +32,5 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] add editor command to autocomplete the current line with llms
 - [ ] use Promise.all(...) to insert all documents with a command
 - [ ] figure out a way to report progress to the user of the indexing time left
+- [ ] enable enter key in the chat modal
+- [ ] make the chat a drawer instead of a modal so that I can still read the document while we are loading

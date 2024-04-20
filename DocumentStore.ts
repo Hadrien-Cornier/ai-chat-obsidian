@@ -77,7 +77,7 @@ export class DocumentStore {
 		if (this.index) {
 			const docRecord = await this.index.docStore.getAllDocumentHashes();
 			const documentList = Object.keys(docRecord);
-			console.log("retrieved document list from the vector index")
+			console.log("retrieved document list from the vector index : ", documentList);
 			return documentList.length;
 		}
         return 0;
@@ -87,9 +87,12 @@ export class DocumentStore {
 		//if no index then initialize it
 		const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
 		if (!this.index) {
+			new Notice("No index found. Initializing index with the first document.");
 			await this.initalizeIndex(llamaDocument);
+		} else {
+			new Notice("Index found. Inserting document into index...");
+			await this.index.insert(llamaDocument);
 		}
-		await this.index.insert(llamaDocument);
 		this.queryEngine = this.index.asQueryEngine();
 		console.log("inserted llamaDocument into index")
 		return this.getTotalNumberOfIndexedDocuments();

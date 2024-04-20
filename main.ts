@@ -33,6 +33,12 @@ export default class AiChat extends Plugin {
 			}
 		});
 
+		const ribbonIconElNumberOfDocs = this.addRibbonIcon('tally-5', 'Number of Indexed Documents', async (evt: MouseEvent) => {
+			// Called when the user clicks the icon.
+			const numberOfDocuments = await this.documentStore.getTotalNumberOfIndexedDocuments();
+			new Notice('Total number of indexed documents indexed: ' + numberOfDocuments);
+		});
+
 		this.addCommand({
             id: 'open-chat-modal',
             name: 'Open Chat',
@@ -40,17 +46,6 @@ export default class AiChat extends Plugin {
                 this.chatBox.open();
             }
         })
-		this.addCommand({
-			id: 'Reindex-current-file',
-			name: 'Reindex Current File',
-			callback: () => {
-				const activeFile = this.app.workspace.getActiveFile();
-				if (activeFile) {
-					this.documentStore.addDocumentPath(activeFile.path);
-					new Notice('Reindexed current file !');
-				}
-			}
-		})
 
 		// Perform additional things with the ribbon
 		ribbonIconElIndex.addClass('current-file-indexed');
