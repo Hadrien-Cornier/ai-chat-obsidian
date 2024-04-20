@@ -2,8 +2,8 @@ import { App, TFile , Notice, Plugin, PluginSettingTab, Setting } from 'obsidian
 import { DocumentStore } from './DocumentStore';
 import { ChatBox } from './ChatBox';
 import { AiChatSettings, DEFAULT_SETTINGS } from './types';
+import {SideDrawerView} from "./SideDrawer";
 // Remember to rename these classes and interfaces!
-
 
 export default class AiChat extends Plugin {
 	settings: AiChatSettings;
@@ -54,6 +54,16 @@ export default class AiChat extends Plugin {
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Status Bar Text');
 
+		// Register the new view
+		this.registerView('ai-chat-side-drawer', (leaf) => new SideDrawerView(leaf));
+
+		// Add a command to open the side drawer
+		this.addCommand({
+			id: 'open-ai-chat-side-drawer',
+			name: 'Open AI Chat Side View',
+			callback: () => this.activateView(),
+		});
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
@@ -73,7 +83,18 @@ export default class AiChat extends Plugin {
 	onunload() {
 
 	}
+	// Function to activate the view
+	async activateView() {
+		this.app.workspace.detachLeavesOfType('ai-chat-side-drawer');
 
+		await this.app.workspace.getRightLeaf(true).setViewState({
+			type: 'ai-chat-side-drawer',
+		});
+
+		this.app.workspace.revealLeaf(
+			this.app.workspace.getLeavesOfType('ai-chat-side-drawer')[0]
+		);
+	}
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}

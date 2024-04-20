@@ -21,7 +21,8 @@ also if ollama request is blocked because of CORS, you can do this :
 
 # Completed features 
 - [X] use an icon to open up the chatbot
-- [ ] add number of documents indexed 
+- [X] add number of documents indexed 
+- [X] make the chat a drawer instead of a modal so that I can still read the document while we are loading
 
 # Upcoming features
 - [ ] make the chat look better
@@ -33,4 +34,3 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] use Promise.all(...) to insert all documents with a command
 - [ ] figure out a way to report progress to the user of the indexing time left
 - [ ] enable enter key in the chat modal
-- [ ] make the chat a drawer instead of a modal so that I can still read the document while we are loading
