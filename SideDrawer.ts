@@ -81,11 +81,15 @@ export class SideDrawerView extends ItemView {
 
 	private async answerInteraction(historyDiv: HTMLDivElement) {
 		const message = this.chatBox.getValue();
-		this.chatHistory.addMessage('User: ' + message);
-		const answer = await this.docStore.answer(message);
-		this.chatHistory.addMessage('AI: ' + answer.response);
+		this.chatHistory.addMessage('Q: ' + message);
 		this.updateChatHistory(historyDiv);
 		this.chatBox.setValue('');
+
+		const answer = await this.docStore.answer(message);
+		if (answer.response) {
+			this.chatHistory.addMessage('A: ' + answer.response);
+			this.updateChatHistory(historyDiv);
+		}
 	}
 
 	updateChatHistory(historyDiv: HTMLElement) {
@@ -93,9 +97,26 @@ export class SideDrawerView extends ItemView {
 		const messages = this.chatHistory.getHistory().split('\n');
 		for (let message of messages) {
 			const span = historyDiv.createSpan();
-			if (message.startsWith('User:')) {
-				span.innerHTML = `<b style="color: blue;">Q: ${message.slice(5)}</b><br/>`;
-			} else if (message.startsWith('AI:')) {
+			if (message.startsWith('Q:')) {
+				span.innerHTML = `<b style="color: blue;">Q: ${message.slice(5)}</b>`;
+				const editButton = new ButtonComponent(span)
+					.setButtonText('Edit')
+					.onClick(() => {
+						const input = new TextComponent(span);
+						input.setValue(message.slice(5));
+						input.inputEl.addEventListener('keydown', async (event) => {
+							if (event.key === 'Enter') {
+								event.preventDefault();
+								const newMessage = input.getValue();
+								this.chatHistory.addMessage('Q: ' + newMessage);
+								historyDiv.empty();
+								const answer = await this.docStore.answer(newMessage);
+								this.chatHistory.addMessage('A: ' + answer.response);
+								this.updateChatHistory(historyDiv);
+							}
+						});
+					});
+			} else if (message.startsWith('A:')) {
 				span.innerHTML = `<b style="color: purple;">A: ${message.slice(3)}</b><br/>`;
 			}
 		}

@@ -28,13 +28,14 @@ export class DocumentStore {
     private queryEngine : RetrieverQueryEngine;
     private storageContext: any;
     private storagePath: string;
+	private statusBar: HTMLElement;
     // private nodePostprocessor: BaseNodePostprocessor;
 
-    constructor(app: App, plugin: AiChat, storagePath: string, chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
+    constructor(app: App, plugin: AiChat, storagePath: string, statusBar: HTMLElement , chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
       this.app = app;
       this.plugin = plugin;
       this.storagePath = storagePath;
-
+	  this.statusBar = statusBar;
       // const ollamaBaseUrl = 'http://localhost:11434'; // Adjust as necessary
       // const llm = new OllamaLLM(ollamaBaseUrl);
 
@@ -59,9 +60,12 @@ export class DocumentStore {
     public async persistToDisk(): Promise<void> {
       }
 
-    public async addDocumentPath(filePath: string): Promise<number> {
-      return await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
-    }
+	public async addDocumentPath(filePath: string): Promise<number> {
+		this.statusBar.setText('Indexing document...');
+		const result = await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+		this.statusBar.setText('Indexing completed');
+		return result;
+	}
 
     public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document> {
       const fileContent: string = await this.app.vault.read(file);

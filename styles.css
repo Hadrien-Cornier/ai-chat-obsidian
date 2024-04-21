@@ -13,3 +13,52 @@ If your plugin does not need CSS, delete this file.
 .current-file-not-indexed {
 	color: red;
 }
+
+/* Chat history styling */
+.chat-history {
+	border: 1px solid #ccc;
+	padding: 10px;
+	margin-bottom: 10px;
+	background-color: #f9f9f9;
+}
+
+/* Chat box styling */
+.chat-box {
+	margin-bottom: 10px;
+}
+
+/* Message styling */
+.message {
+	padding: 5px;
+	margin-bottom: 5px;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+}
+
+/* Question and answer styling */
+.question {
+	color: blue;
+}
+
+.answer {
+	color: purple;
+}
+
+/* Edit button styling */
+.edit-button {
+	display: inline-block;
+	margin-left: 10px;
+	font-size: 14px;
+	background: none;
+	border: none;
+	cursor: pointer;
+}
+
+.edit-button .fa-pencil {
+	font-size: 14px;
+}
+
+/* Submit button styling */
+.submit-button {
+	/* Add your styles for the submit button here */
+}

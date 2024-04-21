@@ -10,12 +10,10 @@ export default class AiChat extends Plugin {
 	documentStore: DocumentStore;
 	chatBox: ChatBox;
 	filesToReprocess: Set<string> = new Set();
+	private statusBar: HTMLElement;
 
 	async onload() {
 		// await this.loadSettings();
-		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat");
-		await this.documentStore.onload();
-		this.chatBox = new ChatBox(this.app, this);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconElChat = this.addRibbonIcon('message-square' , 'AI-Chat', (evt: MouseEvent) => {
@@ -51,8 +49,7 @@ export default class AiChat extends Plugin {
 		ribbonIconElIndex.addClass('current-file-indexed');
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+		this.statusBar = this.addStatusBarItem();
 
 		// Register the new view
 		this.registerView('ai-chat-side-drawer', (leaf) => new SideDrawerView(leaf, this));
@@ -78,6 +75,10 @@ export default class AiChat extends Plugin {
 		// IT SIMPLY EXECUTES A FUNCTION EVERY X MINUTES
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat", this.statusBar);
+		await this.documentStore.onload();
+		this.chatBox = new ChatBox(this.app, this);
 	}
 
 	onunload() {
