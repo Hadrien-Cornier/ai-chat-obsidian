@@ -63,7 +63,7 @@ If your plugin does not need CSS, delete this file.
 	/* Add your styles for the submit button here */
 }
 
-.loading-icon {
+#loading-icon {
 	display: inline-block;
 	animation: spin 1s linear infinite;
 }

@@ -64,7 +64,11 @@ export class DocumentStore {
 		// Create a span element for the loading icon
 		const loadingIcon = document.createElement('span');
 		loadingIcon.innerText = '.';
+		loadingIcon.id = 'loading-icon'; // Add an id to the loading icon
 		loadingIcon.classList.add('loading-icon');
+
+		// Add the title attribute to the loading icon
+		loadingIcon.setAttribute('title', 'Indexing in progress');
 
 		// Add the loading icon to the status bar
 		this.statusBar.appendChild(loadingIcon);
@@ -77,10 +81,20 @@ export class DocumentStore {
 		return result;
 	}
 
-    public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document> {
-      const fileContent: string = await this.app.vault.read(file);
-      return new Document({ text: fileContent });
-    }
+	public preprocessDocumentText(text: string): string {
+		if (this.plugin.settings.stripUrls) {
+			// Use a regular expression to remove URLs from the text
+			return text.replace(/(https?:\/\/(.)*)/g, '');
+		} else {
+			return text;
+		}
+	}
+
+	public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document> {
+		let fileContent: string = await this.app.vault.read(file);
+		fileContent = this.preprocessDocumentText(fileContent);
+		return new Document({ text: fileContent });
+	}
 
     public async createLlamaVectorStoreFromTFiles(files: TFile[]): Promise<VectorStoreIndex> {
       const llamaFiles = await Promise.all(files.map(async (file) => this.convertTFileToLlamaIndexDocument(file)));

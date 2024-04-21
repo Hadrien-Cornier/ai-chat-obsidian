@@ -1,10 +1,12 @@
 import { TFile } from 'obsidian';
 
 export interface AiChatSettings {
+	stripUrls: boolean;
 	selectedOption: string;
 }
 
 export const DEFAULT_SETTINGS: AiChatSettings = {
+	stripUrls: true,
     selectedOption: 'llama2',
 }
 

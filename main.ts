@@ -155,6 +155,16 @@ class SampleSettingTab extends PluginSettingTab {
 					});
 			});
 
+		new Setting(containerEl)
+			.setName('Strip URLs')
+			.setDesc('Enable this option to strip URLs from documents during indexing')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.stripUrls)
+				.onChange(value => {
+					this.plugin.settings.stripUrls = value;
+					this.plugin.saveSettings();
+				}));
+
 		
 	}
 }

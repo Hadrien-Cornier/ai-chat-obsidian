@@ -33,16 +33,11 @@ export class SideDrawerView extends ItemView {
 		this.chatBox = new TextComponent(container as HTMLElement)
 			.setPlaceholder('Type your questions here...');
 
-		// Add event listener to update chat history when a new message is sent
-		this.chatBox.inputEl.addEventListener('change', () => {
-			const message = this.chatBox.getValue();
-			this.chatHistory.addMessage(message);
-			historyDiv.setText(this.chatHistory.getHistory());
-			this.chatBox.setValue('');
-		});
+		// Create a new div for the buttons
+		const buttonDiv = container.createDiv();
 
 		// Create submit button
-		const submitButton = new ButtonComponent(container as HTMLElement)
+		const submitButton = new ButtonComponent(buttonDiv)
 			.setButtonText('Ask')
 			.onClick(async () => {
 				await this.answerInteraction(historyDiv);
@@ -57,14 +52,14 @@ export class SideDrawerView extends ItemView {
 		});
 
 		// Create font size buttons
-		const increaseButton = new ButtonComponent(container as HTMLElement)
+		const increaseButton = new ButtonComponent(buttonDiv)
 			.setButtonText('A ↑')
 			.onClick(() => {
 				const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
 				historyDiv.style.fontSize = (currentSize + 1) + 'px';
 			});
 
-		const decreaseButton = new ButtonComponent(container as HTMLElement)
+		const decreaseButton = new ButtonComponent(buttonDiv)
 			.setButtonText('A ↓')
 			.onClick(() => {
 				const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
@@ -97,10 +92,12 @@ export class SideDrawerView extends ItemView {
 		const messages = this.chatHistory.getHistory().split('\n');
 		for (let message of messages) {
 			const span = historyDiv.createSpan();
+			const messageDiv = historyDiv.createDiv({ cls: 'message' });
 			if (message.startsWith('Q:')) {
-				span.innerHTML = `<b style="color: blue;">Q: ${message.slice(5)}</b>`;
-				const editButton = new ButtonComponent(span)
-					.setButtonText('Edit')
+				messageDiv.createEl('b', { text: 'Q: ' + message.slice(2), cls: 'question' });
+				const editButton = new ButtonComponent(messageDiv)
+					.setTooltip('Edit')
+					.setIcon('pencil')
 					.onClick(() => {
 						const input = new TextComponent(span);
 						input.setValue(message.slice(5));
@@ -116,8 +113,9 @@ export class SideDrawerView extends ItemView {
 							}
 						});
 					});
+				editButton.buttonEl.addClass('edit-button');
 			} else if (message.startsWith('A:')) {
-				span.innerHTML = `<b style="color: purple;">A: ${message.slice(3)}</b><br/>`;
+				messageDiv.createEl('b', { text: 'A: ' + message.slice(2), cls: 'answer' });
 			}
 		}
 	}
