@@ -87,9 +87,21 @@ export default class AiChat extends Plugin {
 	async activateView() {
 		this.app.workspace.detachLeavesOfType('ai-chat-side-drawer');
 
-		await this.app.workspace.getRightLeaf(true).setViewState({
+		let leaf = this.app.workspace.getLeavesOfType('ai-chat-side-drawer')[0];
+
+		// If the leaf doesn't exist, create a new one
+		if (!leaf) {
+			leaf = this.app.workspace.getRightLeaf(true);
+		}
+
+		// Set the view state of the leaf to your custom view
+		await leaf.setViewState({
 			type: 'ai-chat-side-drawer',
 		});
+
+		// await this.app.workspace.getRightLeaf(true).setViewState({
+		// 	type: 'ai-chat-side-drawer',
+		// });
 
 		this.app.workspace.revealLeaf(
 			this.app.workspace.getLeavesOfType('ai-chat-side-drawer')[0]
