@@ -13,7 +13,6 @@ export default class AiChat extends Plugin {
 	private statusBar: HTMLElement;
 
 	async onload() {
-		// await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconElChat = this.addRibbonIcon('message-square' , 'AI-Chat', (evt: MouseEvent) => {
@@ -79,6 +78,7 @@ export default class AiChat extends Plugin {
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat", this.statusBar);
 		await this.documentStore.onload();
 		this.chatBox = new ChatBox(this.app, this);
+		await this.loadSettings();
 	}
 
 	onunload() {

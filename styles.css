@@ -29,25 +29,28 @@ If your plugin does not need CSS, delete this file.
 
 /* Message styling */
 .message {
+	display: flex; /* Make this a flex container */
+	align-items: center; /* Align items vertically in the center */
 	padding: 5px;
-	margin-bottom: 5px;
-	border: 1px solid #ddd;
+	margin: 5px; /* Add margin */
+	width: calc(100% - 10px); /* Subtract double the margin from 100% */
+	border: 1px solid #555;
 	border-radius: 5px;
+	box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
 /* Question and answer styling */
 .question {
-	color: blue;
+	color: #aaaaff;
 }
 
 .answer {
-	color: purple;
+	color: #aaa;
 }
-
 /* Edit button styling */
 .edit-button {
 	display: inline-block;
-	margin-left: 10px;
+	margin-left: auto;
 	font-size: 14px;
 	background: none;
 	border: none;

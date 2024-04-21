@@ -82,10 +82,12 @@ export class DocumentStore {
 	}
 
 	public preprocessDocumentText(text: string): string {
-		if (this.plugin.settings.stripUrls) {
+		if (this.plugin && this.plugin.settings && this.plugin.settings.stripUrls) {
 			// Use a regular expression to remove URLs from the text
+			new Notice("indexing with urls stripped out")
 			return text.replace(/(https?:\/\/(.)*)/g, '');
 		} else {
+			new Notice("indexing with urls included")
 			return text;
 		}
 	}

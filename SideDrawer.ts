@@ -2,7 +2,7 @@ import {ItemView, WorkspaceLeaf, TextComponent, ButtonComponent} from 'obsidian'
 import {ChatHistory} from "./ChatBox";
 import {DocumentStore} from "./DocumentStore";
 import AiChat from "./main";
-// Define a new view by extending ItemView
+
 export class SideDrawerView extends ItemView {
 	private chatHistory: ChatHistory;
 	private chatBox: TextComponent;
@@ -30,8 +30,9 @@ export class SideDrawerView extends ItemView {
 		historyDiv.setText(this.chatHistory.getHistory());
 
 		// Create chat box
-		this.chatBox = new TextComponent(container as HTMLElement)
-			.setPlaceholder('Type your questions here...');
+		this.chatBox = new TextComponent(container as HTMLElement);
+		this.chatBox.setPlaceholder('Type Question ⏎');
+		this.chatBox.inputEl.style.width = '100%'; // Make the text box take the entire length of the drawer
 
 		// Create a new div for the buttons
 		const buttonDiv = container.createDiv();
@@ -67,7 +68,6 @@ export class SideDrawerView extends ItemView {
 					historyDiv.style.fontSize = (currentSize - 1) + 'px';
 				}
 			});
-
 		// the explanation of this is crazy
 		setTimeout(() => {
 			(decreaseButton.buttonEl.childNodes[0] as HTMLElement).style.fontSize = '0.6em';
@@ -100,7 +100,7 @@ export class SideDrawerView extends ItemView {
 					.setIcon('pencil')
 					.onClick(() => {
 						const input = new TextComponent(span);
-						input.setValue(message.slice(5));
+						input.setValue(message.slice(3).trimStart());
 						input.inputEl.addEventListener('keydown', async (event) => {
 							if (event.key === 'Enter') {
 								event.preventDefault();
