@@ -45,28 +45,61 @@ export class SideDrawerView extends ItemView {
 		const submitButton = new ButtonComponent(container as HTMLElement)
 			.setButtonText('Ask')
 			.onClick(async () => {
-				const message = this.chatBox.getValue();
-				this.chatHistory.addMessage('User: ' + message);
-				const answer = await this.docStore.answer(message);
-				this.chatHistory.addMessage('AI: ' + answer.response);
-				historyDiv.setText(this.chatHistory.getHistory());
-				this.chatBox.setValue('');
+				await this.answerInteraction(historyDiv);
 			});
 
 		// Add event listener to submit question when enter is pressed
 		this.chatBox.inputEl.addEventListener('keydown', async (event) => {
 			if (event.key === 'Enter') {
 				event.preventDefault();
-				const message = this.chatBox.getValue();
-				this.chatHistory.addMessage('User: ' + message);
-				const answer = await this.docStore.answer(message);
-				this.chatHistory.addMessage('AI: ' + answer.response);
-				historyDiv.setText(this.chatHistory.getHistory());
-				this.chatBox.setValue('');
+				await this.answerInteraction(historyDiv);
 			}
 		});
+
+		// Create font size buttons
+		const increaseButton = new ButtonComponent(container as HTMLElement)
+			.setButtonText('A ↑')
+			.onClick(() => {
+				const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
+				historyDiv.style.fontSize = (currentSize + 1) + 'px';
+			});
+
+		const decreaseButton = new ButtonComponent(container as HTMLElement)
+			.setButtonText('A ↓')
+			.onClick(() => {
+				const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
+				if (currentSize > 1) {
+					historyDiv.style.fontSize = (currentSize - 1) + 'px';
+				}
+			});
+
+		// the explanation of this is crazy
+		setTimeout(() => {
+			(decreaseButton.buttonEl.childNodes[0] as HTMLElement).style.fontSize = '0.6em';
+		}, 0);
 	}
 
+	private async answerInteraction(historyDiv: HTMLDivElement) {
+		const message = this.chatBox.getValue();
+		this.chatHistory.addMessage('User: ' + message);
+		const answer = await this.docStore.answer(message);
+		this.chatHistory.addMessage('AI: ' + answer.response);
+		this.updateChatHistory(historyDiv);
+		this.chatBox.setValue('');
+	}
+
+	updateChatHistory(historyDiv: HTMLElement) {
+		historyDiv.empty();
+		const messages = this.chatHistory.getHistory().split('\n');
+		for (let message of messages) {
+			const span = historyDiv.createSpan();
+			if (message.startsWith('User:')) {
+				span.innerHTML = `<b style="color: blue;">Q: ${message.slice(5)}</b><br/>`;
+			} else if (message.startsWith('AI:')) {
+				span.innerHTML = `<b style="color: purple;">A: ${message.slice(3)}</b><br/>`;
+			}
+		}
+	}
 	async onClose() {
 		// Clean up if necessary
 	}

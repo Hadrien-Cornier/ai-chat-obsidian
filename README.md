@@ -36,3 +36,5 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] figure out a way to report progress to the user of the indexing time left
 - [ ] add a command to index all documents in the vault
 - [ ] make the chat side drawer look nicer
+- [ ] display loading bar when indexing in the status bar at the bottom.
+- [ ] display a loading bar when I type enter in the chatbox  
