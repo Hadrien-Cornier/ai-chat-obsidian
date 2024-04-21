@@ -61,9 +61,19 @@ export class DocumentStore {
       }
 
 	public async addDocumentPath(filePath: string): Promise<number> {
-		this.statusBar.setText('Indexing document...');
+		// Create a span element for the loading icon
+		const loadingIcon = document.createElement('span');
+		loadingIcon.innerText = '.';
+		loadingIcon.classList.add('loading-icon');
+
+		// Add the loading icon to the status bar
+		this.statusBar.appendChild(loadingIcon);
+
 		const result = await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
-		this.statusBar.setText('Indexing completed');
+
+		// Remove the loading icon from the status bar
+		this.statusBar.removeChild(loadingIcon);
+
 		return result;
 	}
 
@@ -77,7 +87,7 @@ export class DocumentStore {
 	  return await VectorStoreIndex.fromDocuments(llamaFiles);
     }
 
-    public async initalizeIndex(llamaDocument: Document): Promise<void> {
+    public async initializeIndex(llamaDocument: Document): Promise<void> {
       Settings.llm = new Ollama({ model: "llama2" });
       Settings.embedModel = new OllamaEmbedding({ model: "llama2" });
       this.index = await VectorStoreIndex.fromDocuments([llamaDocument]);
@@ -100,7 +110,7 @@ export class DocumentStore {
 		const llamaDocument = await this.convertTFileToLlamaIndexDocument(file);
 		if (!this.index) {
 			new Notice("No index found. Initializing index with the first document.");
-			await this.initalizeIndex(llamaDocument);
+			await this.initializeIndex(llamaDocument);
 		} else {
 			new Notice("Index found. Inserting document into index...");
 			await this.index.insert(llamaDocument);

@@ -62,3 +62,13 @@ If your plugin does not need CSS, delete this file.
 .submit-button {
 	/* Add your styles for the submit button here */
 }
+
+.loading-icon {
+	display: inline-block;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
