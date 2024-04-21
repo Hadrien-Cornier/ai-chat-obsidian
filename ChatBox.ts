@@ -1,8 +1,18 @@
-import {App, Modal, Notice, TextComponent, ButtonComponent} from 'obsidian';
+import {App, Modal, TextComponent, ButtonComponent} from 'obsidian';
 import {DocumentStore} from './DocumentStore';
 import AiChat from './main';
-import { Document } from 'llamaindex';
 
+export class ChatHistory {
+	private messages: string[] = [];
+
+	addMessage(message: string) {
+		this.messages.push(message);
+	}
+
+	getHistory(): string {
+		return this.messages.join('\n');
+	}
+}
 export class ChatBox extends Modal {
     private input: TextComponent;
     private output: HTMLDivElement;

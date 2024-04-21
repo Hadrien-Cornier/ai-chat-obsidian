@@ -14,7 +14,7 @@ export default class AiChat extends Plugin {
 	async onload() {
 		// await this.loadSettings();
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat");
-		this.documentStore.onload();
+		await this.documentStore.onload();
 		this.chatBox = new ChatBox(this.app, this);
 
 		// This creates an icon in the left ribbon.
@@ -55,7 +55,7 @@ export default class AiChat extends Plugin {
 		statusBarItemEl.setText('Status Bar Text');
 
 		// Register the new view
-		this.registerView('ai-chat-side-drawer', (leaf) => new SideDrawerView(leaf));
+		this.registerView('ai-chat-side-drawer', (leaf) => new SideDrawerView(leaf, this));
 
 		// Add a command to open the side drawer
 		this.addCommand({
@@ -128,17 +128,17 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Select LLM Model')
-			.setDesc('Choose a model from the dropdown')
+			.setName('Select Ollama Model')
+			.setDesc('Choose Ollama model from the dropdown')
 			.addDropdown((dropdown) => {
 				dropdown
-					.addOption('llama2 - 7B', 'Llama2 - 7B')
+					.addOption('llama2', 'Llama2 - 7B')
 					.addOption('codellama', 'CodeLlama  - 7B')
-					.addOption('mistral - 7B', 'Mistral  - 7B')
+					.addOption('llama3', 'Mistral  - 7B')
 					.setValue(this.plugin.settings.selectedOption)
 					.onChange((value) => {
 						this.plugin.settings.selectedOption = value;
-						this.plugin.saveSettings();
+						this.plugin.saveSettings().then(r => console.log("Settings saved"));
 					});
 			});
 

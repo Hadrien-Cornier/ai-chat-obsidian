@@ -1,10 +1,19 @@
 import AiChat from './main';
-import { Notice } from 'obsidian';
-import { App, TFile } from 'obsidian';
+import {App, Notice, TFile} from 'obsidian';
 // import * as use from '@tensorflow-models/universal-sentence-encoder';
 // @ts-ignore
 // const punycode = require('punycode/');
-import { Ollama, Settings, Document,Response, Metadata, RetrieverQueryEngine, VectorStoreIndex, storageContextFromDefaults, CohereRerank, BaseNodePostprocessor, OllamaEmbedding } from 'llamaindex';
+import {
+	Document,
+	Metadata,
+	Ollama,
+	OllamaEmbedding,
+	Response,
+	RetrieverQueryEngine,
+	Settings,
+	VectorStoreIndex
+} from 'llamaindex';
+
 // import { OllamaLLM, OllamaEmbedding } from './OllamaModels';
 
 export class DocumentStore {
@@ -54,15 +63,14 @@ export class DocumentStore {
       return await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
     }
 
-    public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document<Metadata>> {
+    public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document> {
       const fileContent: string = await this.app.vault.read(file);
       return new Document({ text: fileContent });
     }
 
     public async createLlamaVectorStoreFromTFiles(files: TFile[]): Promise<VectorStoreIndex> {
       const llamaFiles = await Promise.all(files.map(async (file) => this.convertTFileToLlamaIndexDocument(file)));
-      const index = await VectorStoreIndex.fromDocuments(llamaFiles);
-      return index;
+	  return await VectorStoreIndex.fromDocuments(llamaFiles);
     }
 
     public async initalizeIndex(llamaDocument: Document): Promise<void> {
@@ -109,4 +117,4 @@ export class DocumentStore {
 		}
       return this.queryEngine.query({ query: prompt });
     }
-   };
+   }
