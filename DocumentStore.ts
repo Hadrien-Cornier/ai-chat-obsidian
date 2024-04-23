@@ -53,6 +53,12 @@ export class DocumentStore {
 		// Remove the loading icon from the status bar
 		this.statusBar.removeChild(loadingIcon);
 
+		// Check if the indexed file is the active file
+		if (filePath === this.app.workspace.getActiveFile().path) {
+			this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
+			this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
+		}
+
 		return result;
 	}
 

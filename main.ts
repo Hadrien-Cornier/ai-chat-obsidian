@@ -1,4 +1,4 @@
-import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {App, Notice, Plugin, PluginSettingTab, Setting, TFile} from 'obsidian';
 import { DocumentStore } from './DocumentStore';
 import { AiChatSettings, DEFAULT_SETTINGS } from './types';
 import {SideDrawerView} from "./SideDrawer";
@@ -8,11 +8,13 @@ export default class AiChat extends Plugin {
 	settings: AiChatSettings;
 	documentStore: DocumentStore;
 	private statusBar: HTMLElement;
+	ribbonIconElIndex: HTMLElement;
 
 	async onload() {
 		await this.loadSettings();
+		this.app.vault.on('modify', this.handleFileModify.bind(this));
 
-		const ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', async (evt: MouseEvent) => {
+		this.ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			const activeFile = this.app.workspace.getActiveFile();	
 			if (activeFile) {
@@ -37,7 +39,7 @@ export default class AiChat extends Plugin {
 		});
 
 		// Perform additional things with the ribbon
-		ribbonIconElIndex.addClass('current-file-indexed');
+		this.ribbonIconElIndex.addClass('current-file-indexed');
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		this.statusBar = this.addStatusBarItem();
@@ -61,7 +63,12 @@ export default class AiChat extends Plugin {
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat", this.statusBar);
 		await this.documentStore.onload();
 	}
-
+	private handleFileModify(file: TFile) {
+		if (file === this.app.workspace.getActiveFile()) {
+			this.ribbonIconElIndex.removeClass('current-file-indexed');
+			this.ribbonIconElIndex.addClass('current-file-not-indexed');
+		}
+	}
 	onunload() {
 
 	}
