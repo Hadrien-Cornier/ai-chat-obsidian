@@ -51,12 +51,19 @@ export class SideDrawerView extends ItemView {
 		this.updateChatHistory(historyDiv);
 		this.chatBox.setValue('');
 
+		// Create a new div for the loading bar
+		const loadingBar = historyDiv.createDiv({ cls: 'loading-bar' });
+		loadingBar.setText('Loading...'); // Set the text of the loading bar
+
 		const answer = await this.docStore.answer(message);
 		if (answer.response) {
 			// Use the model name from the settings instead of 'A:'
 			this.chatHistory.addMessage(this.plugin.settings.modelName + ': ' + answer.response);
 			this.updateChatHistory(historyDiv);
 		}
+
+		// Hide the loading bar
+		loadingBar.remove();
 	}
 
 	updateChatHistory(historyDiv: HTMLElement) {
