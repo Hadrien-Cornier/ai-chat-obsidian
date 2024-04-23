@@ -1,4 +1,4 @@
-import {ItemView, WorkspaceLeaf, TextComponent, ButtonComponent} from 'obsidian';
+import {ItemView, WorkspaceLeaf, TextComponent, ButtonComponent, Notice} from 'obsidian';
 import {ChatHistory} from "./ChatBox";
 import {DocumentStore} from "./DocumentStore";
 import AiChat from "./main";
@@ -43,6 +43,17 @@ export class SideDrawerView extends ItemView {
 				await this.answerInteraction(historyDiv);
 			}
 		});
+		const copyButton = new ButtonComponent(container as HTMLElement)
+			.setButtonText('Copy Last Answer')
+			.onClick(() => {
+				const messages = this.chatHistory.getHistory();
+				if (messages.length > 0) {
+					const lastAnswer = messages[messages.length - 1];
+					const answerWithoutModelName = lastAnswer.split(':').slice(1).join(':').trim();
+					new Notice('Copied answer');
+					navigator.clipboard.writeText(answerWithoutModelName);
+				}
+			});
 	}
 
 	private async answerInteraction(historyDiv: HTMLDivElement) {
