@@ -24,9 +24,9 @@ also if ollama request is blocked because of CORS, you can do this :
 - [X] add number of documents indexed 
 - [X] make the chat a drawer instead of a modal so that I can still read the document while we are loading
 - [X] enable enter key in the chat modal
+- [X] display loading bar when indexing in the status bar at the bottom.
 
 # Upcoming features
-- [ ] make the chat look better
 - [ ] add tool that can query the internet for information
 - [ ] ability to ask questions within a page
 - [ ] filter documents based on tags before starting the RAG conversation
@@ -36,5 +36,4 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] figure out a way to report progress to the user of the indexing time left
 - [ ] add a command to index all documents in the vault
 - [ ] make the chat side drawer look nicer
-- [ ] display loading bar when indexing in the status bar at the bottom.
 - [ ] display a loading bar when I type enter in the chatbox  

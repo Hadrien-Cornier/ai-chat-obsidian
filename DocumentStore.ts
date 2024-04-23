@@ -1,8 +1,6 @@
 import AiChat from './main';
 import {App, Notice, TFile} from 'obsidian';
-// import * as use from '@tensorflow-models/universal-sentence-encoder';
-// @ts-ignore
-// const punycode = require('punycode/');
+
 import {
 	Document,
 	Metadata,
@@ -14,16 +12,9 @@ import {
 	VectorStoreIndex
 } from 'llamaindex';
 
-// import { OllamaLLM, OllamaEmbedding } from './OllamaModels';
-
 export class DocumentStore {
-
-    // Very simple document store using tensorflow.js WebGL accelerated KNN classifier and text embeddings
-    // they run within the "browser" of the obsidian app
     private app: App;
-
-    private plugin: AiChat;
-
+    private readonly plugin: AiChat;
     private index: VectorStoreIndex;
     private queryEngine : RetrieverQueryEngine;
     private storageContext: any;
@@ -31,34 +22,18 @@ export class DocumentStore {
 	private statusBar: HTMLElement;
     // private nodePostprocessor: BaseNodePostprocessor;
 
-    constructor(app: App, plugin: AiChat, storagePath: string, statusBar: HTMLElement , chunkSize: number = 10000, overlap: number = 0, modelName: string = 'llama2') {
+    constructor(app: App, plugin: AiChat, storagePath: string, statusBar: HTMLElement) {
       this.app = app;
       this.plugin = plugin;
       this.storagePath = storagePath;
 	  this.statusBar = statusBar;
-      // const ollamaBaseUrl = 'http://localhost:11434'; // Adjust as necessary
-      // const llm = new OllamaLLM(ollamaBaseUrl);
-
-      // const serviceContext = {
-      //     llmPredictor: llm,
-      //     embedModel: embedding
-      // };
-
-      // const vectorStoreIndex = VectorStoreIndex.fromDocuments(documents, serviceContext);
-      // this.nodePostprocessor = new CohereRerank({ apiKey: process.env.COHERE_API_KEY ?? null, topN: 4 });
-    }
+     }
   
     async onload() {
-      // this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath});
-      // this.index = await this.loadIndexFromStorage(this.storageContext);
-      // this.queryEngine = this.index.asQueryEngine();
     }
 
     onunload() {
     }
-
-    public async persistToDisk(): Promise<void> {
-      }
 
 	public async addDocumentPath(filePath: string): Promise<number> {
 		// Create a span element for the loading icon
@@ -98,11 +73,6 @@ export class DocumentStore {
 		return new Document({ text: fileContent });
 	}
 
-    public async createLlamaVectorStoreFromTFiles(files: TFile[]): Promise<VectorStoreIndex> {
-      const llamaFiles = await Promise.all(files.map(async (file) => this.convertTFileToLlamaIndexDocument(file)));
-	  return await VectorStoreIndex.fromDocuments(llamaFiles);
-    }
-
     public async initializeIndex(llamaDocument: Document): Promise<void> {
       Settings.llm = new Ollama({ model: "llama2" });
       Settings.embedModel = new OllamaEmbedding({ model: "llama2" });
@@ -136,15 +106,12 @@ export class DocumentStore {
 		return this.getTotalNumberOfIndexedDocuments();
 	}
 
-    public loadIndexFromStorage(storageContext: any): PromiseLike<VectorStoreIndex> {
-      return VectorStoreIndex.init({storageContext: storageContext});
-    }
-
     public async answer(prompt: string): Promise<Response> {
 		if (!this.queryEngine) {
 			new Notice("No documents indexed yet. Please index some documents first.");
 			return new Response("No documents indexed yet. Please index some documents first.");
 		}
-      return this.queryEngine.query({ query: prompt });
+		const response = this.queryEngine.query({ query: prompt });
+		return response;
     }
    }

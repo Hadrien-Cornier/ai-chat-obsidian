@@ -25,15 +25,8 @@ export class SideDrawerView extends ItemView {
 	async onOpen() {
 		const container = this.containerEl.children[1];
 		container.empty();
-		// const titleDiv = container.createDiv();
-		// titleDiv.addClass('view-header-title-container');
-		// titleDiv.setText('AI Chat');
-		// container.createEl('h1', { text: this.getDisplayText() });
-		// container.createEl('hr'); // Add a horizontal line
-
-		// Create chat history display
 		const historyDiv = container.createDiv();
-		historyDiv.setText(this.chatHistory.getHistory());
+		this.updateChatHistory(historyDiv);
 
 		// Create chat box
 		this.chatBox = new TextComponent(container as HTMLElement);
@@ -50,40 +43,6 @@ export class SideDrawerView extends ItemView {
 				await this.answerInteraction(historyDiv);
 			}
 		});
-		// // Create submit button
-		// const submitButton = new ButtonComponent(buttonDiv)
-		// 	.setButtonText('Ask')
-		// 	.onClick(async () => {
-		// 		await this.answerInteraction(historyDiv);
-		// 	});
-		// submitButton.buttonEl.addClass('submit-button');
-
-		// Create font size buttons
-		// const increaseButton = new ButtonComponent(buttonDiv)
-		// 	.setButtonText('A ↑')
-		// 	.onClick(() => {
-		// 		const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
-		// 		historyDiv.style.fontSize = (currentSize + 1) + 'px';
-		// 	});
-		// increaseButton.buttonEl.addClass('font-size-buttons');
-		// increaseButton.buttonEl.addClass('increase-button');
-		//
-		// const decreaseButton = new ButtonComponent(buttonDiv)
-		// 	.setButtonText('A ↓')
-		// 	.onClick(() => {
-		// 		const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
-		// 		if (currentSize > 1) {
-		// 			historyDiv.style.fontSize = (currentSize - 1) + 'px';
-		// 		}
-		// 	});
-		// decreaseButton.buttonEl.addClass('font-size-buttons');
-		// decreaseButton.buttonEl.addClass('decrease-button');
-
-		// // the explanation of this is crazy
-		// setTimeout(() => {
-		// 	let obj = (decreaseButton.buttonEl as HTMLElement);
-		// 	obj.style.fontSize = '0.8em';
-		// }, 200);
 	}
 
 	private async answerInteraction(historyDiv: HTMLDivElement) {
@@ -102,11 +61,12 @@ export class SideDrawerView extends ItemView {
 
 	updateChatHistory(historyDiv: HTMLElement) {
 		historyDiv.empty();
-		const messages = this.chatHistory.getHistory().split('\n');
+		const messages = this.chatHistory.getHistory();
+		let i=0;
 		for (let message of messages) {
 			const span = historyDiv.createSpan();
 			const messageDiv = historyDiv.createDiv({ cls: 'message' });
-			if (message.startsWith('Q:')) {
+			if (i++ % 2 === 0) {
 				messageDiv.createEl('b', { text: 'Q: ' + message.slice(2), cls: 'question' });
 				const editButton = new ButtonComponent(messageDiv)
 					.setTooltip('Edit')
@@ -128,7 +88,7 @@ export class SideDrawerView extends ItemView {
 						});
 					});
 				editButton.buttonEl.addClass('edit-button');
-			} else if (message.startsWith(this.plugin.settings.modelName + ':')) {
+			} else {
 				// Check if the message starts with the model name instead of 'A:'
 				messageDiv.createEl('b', { text: this.plugin.settings.modelName + ': ' + message.slice((this.plugin.settings.modelName + ':').length), cls: 'answer' });
 			}

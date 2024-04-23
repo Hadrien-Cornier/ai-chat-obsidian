@@ -63,7 +63,7 @@ export default class AiChat extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
-		// 
+
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
@@ -89,19 +89,13 @@ export default class AiChat extends Plugin {
 
 		let leaf = this.app.workspace.getLeavesOfType('ai-chat-side-drawer')[0];
 
-		// If the leaf doesn't exist, create a new one
 		if (!leaf) {
 			leaf = this.app.workspace.getRightLeaf(true);
 		}
 
-		// Set the view state of the leaf to your custom view
 		await leaf.setViewState({
 			type: 'ai-chat-side-drawer',
 		});
-
-		// await this.app.workspace.getRightLeaf(true).setViewState({
-		// 	type: 'ai-chat-side-drawer',
-		// });
 
 		this.app.workspace.revealLeaf(
 			this.app.workspace.getLeavesOfType('ai-chat-side-drawer')[0]
@@ -114,16 +108,6 @@ export default class AiChat extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-
-	private async processFile(file: TFile) {
-        // Read file content
-        const content = await this.app.vault.read(file);
-        
-        // Here you would implement the logic to generate the embedding and index it
-        console.log(`Processing file: ${file.path}`);
-		new Notice('This is a notice that we are processing 2!');
-        // Example: generateEmbeddingAndIndex(content, file.path);
-    }
 }
 
 class SampleSettingTab extends PluginSettingTab {

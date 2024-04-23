@@ -9,8 +9,8 @@ export class ChatHistory {
 		this.messages.push(message);
 	}
 
-	getHistory(): string {
-		return this.messages.join('\n');
+	getHistory(): string[] {
+		return this.messages;
 	}
 }
 export class ChatBox extends Modal {
@@ -51,6 +51,7 @@ export class ChatBox extends Modal {
     async answer(prompt: string) : Promise<string> {
         // const response = await query
         const response = await this.docStore.answer(prompt);
+		console.log("CHATBOX : response from query engine: ", response);
         return response.response;
     }    
 
