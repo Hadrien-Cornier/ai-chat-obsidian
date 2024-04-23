@@ -13,7 +13,7 @@ export default class AiChat extends Plugin {
 	private statusBar: HTMLElement;
 
 	async onload() {
-
+		await this.loadSettings();
 		// This creates an icon in the left ribbon.
 		const ribbonIconElChat = this.addRibbonIcon('message-square' , 'AI-Chat', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
@@ -78,7 +78,6 @@ export default class AiChat extends Plugin {
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat", this.statusBar);
 		await this.documentStore.onload();
 		this.chatBox = new ChatBox(this.app, this);
-		await this.loadSettings();
 	}
 
 	onunload() {
@@ -145,9 +144,7 @@ class SampleSettingTab extends PluginSettingTab {
 			.setDesc('Choose Ollama model from the dropdown')
 			.addDropdown((dropdown) => {
 				dropdown
-					.addOption('llama2', 'Llama2 - 7B')
-					.addOption('codellama', 'CodeLlama  - 7B')
-					.addOption('llama3', 'Mistral  - 7B')
+					.addOption('llama2', 'Llama2 ollama 7B')
 					.setValue(this.plugin.settings.modelName)
 					.onChange((value) => {
 						this.plugin.settings.modelName = value;
