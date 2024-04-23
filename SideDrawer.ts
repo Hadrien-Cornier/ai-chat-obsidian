@@ -7,9 +7,11 @@ export class SideDrawerView extends ItemView {
 	private chatHistory: ChatHistory;
 	private chatBox: TextComponent;
 	private docStore: DocumentStore;
+	private plugin: AiChat;
 	constructor(leaf: WorkspaceLeaf, plugin: AiChat) {
 		super(leaf);
 		this.chatHistory = new ChatHistory();
+		this.plugin = plugin;
 		this.docStore = plugin.documentStore;
 	}
 	getViewType(): string {
@@ -23,7 +25,11 @@ export class SideDrawerView extends ItemView {
 	async onOpen() {
 		const container = this.containerEl.children[1];
 		container.empty();
-		container.createEl('h1', { text: 'Chat Started' });
+		// const titleDiv = container.createDiv();
+		// titleDiv.addClass('view-header-title-container');
+		// titleDiv.setText('AI Chat');
+		// container.createEl('h1', { text: this.getDisplayText() });
+		// container.createEl('hr'); // Add a horizontal line
 
 		// Create chat history display
 		const historyDiv = container.createDiv();
@@ -31,18 +37,11 @@ export class SideDrawerView extends ItemView {
 
 		// Create chat box
 		this.chatBox = new TextComponent(container as HTMLElement);
-		this.chatBox.setPlaceholder('Type Question ⏎');
+		this.chatBox.setPlaceholder('Type Question For ' + this.plugin.settings.modelName +  ' ⏎');
 		this.chatBox.inputEl.style.width = '100%'; // Make the text box take the entire length of the drawer
-
+		this.chatBox.inputEl.addClass('chat-box');
 		// Create a new div for the buttons
 		const buttonDiv = container.createDiv();
-
-		// Create submit button
-		const submitButton = new ButtonComponent(buttonDiv)
-			.setButtonText('Ask')
-			.onClick(async () => {
-				await this.answerInteraction(historyDiv);
-			});
 
 		// Add event listener to submit question when enter is pressed
 		this.chatBox.inputEl.addEventListener('keydown', async (event) => {
@@ -51,27 +50,40 @@ export class SideDrawerView extends ItemView {
 				await this.answerInteraction(historyDiv);
 			}
 		});
+		// // Create submit button
+		// const submitButton = new ButtonComponent(buttonDiv)
+		// 	.setButtonText('Ask')
+		// 	.onClick(async () => {
+		// 		await this.answerInteraction(historyDiv);
+		// 	});
+		// submitButton.buttonEl.addClass('submit-button');
 
 		// Create font size buttons
-		const increaseButton = new ButtonComponent(buttonDiv)
-			.setButtonText('A ↑')
-			.onClick(() => {
-				const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
-				historyDiv.style.fontSize = (currentSize + 1) + 'px';
-			});
+		// const increaseButton = new ButtonComponent(buttonDiv)
+		// 	.setButtonText('A ↑')
+		// 	.onClick(() => {
+		// 		const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
+		// 		historyDiv.style.fontSize = (currentSize + 1) + 'px';
+		// 	});
+		// increaseButton.buttonEl.addClass('font-size-buttons');
+		// increaseButton.buttonEl.addClass('increase-button');
+		//
+		// const decreaseButton = new ButtonComponent(buttonDiv)
+		// 	.setButtonText('A ↓')
+		// 	.onClick(() => {
+		// 		const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
+		// 		if (currentSize > 1) {
+		// 			historyDiv.style.fontSize = (currentSize - 1) + 'px';
+		// 		}
+		// 	});
+		// decreaseButton.buttonEl.addClass('font-size-buttons');
+		// decreaseButton.buttonEl.addClass('decrease-button');
 
-		const decreaseButton = new ButtonComponent(buttonDiv)
-			.setButtonText('A ↓')
-			.onClick(() => {
-				const currentSize = parseFloat(window.getComputedStyle(historyDiv).fontSize);
-				if (currentSize > 1) {
-					historyDiv.style.fontSize = (currentSize - 1) + 'px';
-				}
-			});
-		// the explanation of this is crazy
-		setTimeout(() => {
-			(decreaseButton.buttonEl.childNodes[0] as HTMLElement).style.fontSize = '0.6em';
-		}, 0);
+		// // the explanation of this is crazy
+		// setTimeout(() => {
+		// 	let obj = (decreaseButton.buttonEl as HTMLElement);
+		// 	obj.style.fontSize = '0.8em';
+		// }, 200);
 	}
 
 	private async answerInteraction(historyDiv: HTMLDivElement) {
@@ -82,7 +94,8 @@ export class SideDrawerView extends ItemView {
 
 		const answer = await this.docStore.answer(message);
 		if (answer.response) {
-			this.chatHistory.addMessage('A: ' + answer.response);
+			// Use the model name from the settings instead of 'A:'
+			this.chatHistory.addMessage(this.plugin.settings.modelName + ': ' + answer.response);
 			this.updateChatHistory(historyDiv);
 		}
 	}
@@ -108,14 +121,16 @@ export class SideDrawerView extends ItemView {
 								this.chatHistory.addMessage('Q: ' + newMessage);
 								historyDiv.empty();
 								const answer = await this.docStore.answer(newMessage);
-								this.chatHistory.addMessage('A: ' + answer.response);
+								// Use the model name from the settings instead of 'A:'
+								this.chatHistory.addMessage(this.plugin.settings.modelName + ': ' + answer.response);
 								this.updateChatHistory(historyDiv);
 							}
 						});
 					});
 				editButton.buttonEl.addClass('edit-button');
-			} else if (message.startsWith('A:')) {
-				messageDiv.createEl('b', { text: 'A: ' + message.slice(2), cls: 'answer' });
+			} else if (message.startsWith(this.plugin.settings.modelName + ':')) {
+				// Check if the message starts with the model name instead of 'A:'
+				messageDiv.createEl('b', { text: this.plugin.settings.modelName + ': ' + message.slice((this.plugin.settings.modelName + ':').length), cls: 'answer' });
 			}
 		}
 	}

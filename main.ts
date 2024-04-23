@@ -148,9 +148,9 @@ class SampleSettingTab extends PluginSettingTab {
 					.addOption('llama2', 'Llama2 - 7B')
 					.addOption('codellama', 'CodeLlama  - 7B')
 					.addOption('llama3', 'Mistral  - 7B')
-					.setValue(this.plugin.settings.selectedOption)
+					.setValue(this.plugin.settings.modelName)
 					.onChange((value) => {
-						this.plugin.settings.selectedOption = value;
+						this.plugin.settings.modelName = value;
 						this.plugin.saveSettings().then(r => console.log("Settings saved"));
 					});
 			});

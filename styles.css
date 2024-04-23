@@ -24,6 +24,7 @@ If your plugin does not need CSS, delete this file.
 
 /* Chat box styling */
 .chat-box {
+	margin-top: 50px; /* Adjust this value as needed */
 	margin-bottom: 10px;
 }
 
@@ -61,9 +62,65 @@ If your plugin does not need CSS, delete this file.
 	font-size: 14px;
 }
 
-/* Submit button styling */
+/* Submit button (Ask button) styling */
 .submit-button {
-	/* Add your styles for the submit button here */
+	font-size: 12px;
+	padding: 5px 10px;
+	border-radius: 5px;
+	width: auto; /* Adjust width to fit content */
+	height: auto; /* Adjust height to fit content */
+	margin: 0;
+	display: flex;
+	justify-content: center; /* Center the arrow icon */
+	align-items: center; /* Vertically align the arrow icon */
+	position: absolute; /* Position the button absolutely */
+	right: 10px; /* Position to the right inside the parent container */
+	top: 10px; /* Position at the top inside the parent container */
+}
+
+/* Replace text with up arrow icon for the Ask button */
+.submit-button::after {
+	content: '^'; /* Change to up arrow */
+	font-size: 16px; /* Adjust the size of the arrow */
+	margin-left: 5px; /* Space between text and arrow */
+}
+
+/* Font size buttons container */
+.font-size-buttons {
+	position: absolute; /* Position the container absolutely */
+	bottom: 200px; /* Position at the bottom inside the parent container */
+	right: 10px; /* Position to the right inside the parent container */
+	display: flex; /* Use flexbox for horizontal layout */
+}
+
+/* Increase and decrease font size buttons styling */
+.increase-button,
+.decrease-button {
+	font-size: 12px; /* Adjust this to change the size of the text on the button */
+	padding: 5px 10px; /* Adjust this to change the padding around the text */
+	border-radius: 5px; /* Adjust this to change the border radius */
+	margin: 0 5px; /* Adjust spacing between buttons */
+	display: inline-block; /* Change to inline-block for horizontal layout */
+}
+
+/* Position the font size buttons side by side */
+.increase-button {
+	order: 2; /* The increase button will be on the left */
+}
+
+.decrease-button {
+	order: 1; /* The decrease button will be on the right */
+}
+
+/* Side drawer title styling */
+.view-header-title-container {
+	position: absolute;
+	top: 10px;
+	left: 0;
+	width: 100%;
+	text-align: center;
+	font-size: 14px;
+	margin: 10px;
 }
 
 #loading-icon {

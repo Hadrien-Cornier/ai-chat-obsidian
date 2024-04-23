@@ -2,12 +2,12 @@ import { TFile } from 'obsidian';
 
 export interface AiChatSettings {
 	stripUrls: boolean;
-	selectedOption: string;
+	modelName: string;
 }
 
 export const DEFAULT_SETTINGS: AiChatSettings = {
 	stripUrls: true,
-    selectedOption: 'llama2',
+    modelName: 'llama2',
 }
 
 export interface DocumentChunk {
