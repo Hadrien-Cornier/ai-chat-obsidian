@@ -1,5 +1,5 @@
 import {ItemView, WorkspaceLeaf, TextComponent, ButtonComponent, Notice} from 'obsidian';
-import {ChatHistory} from "./ChatBox";
+import {ChatBox, ChatHistory} from "./ChatBox";
 import {DocumentStore} from "./DocumentStore";
 import AiChat from "./main";
 

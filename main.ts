@@ -1,6 +1,5 @@
-import { App, TFile , Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { DocumentStore } from './DocumentStore';
-import { ChatBox } from './ChatBox';
 import { AiChatSettings, DEFAULT_SETTINGS } from './types';
 import {SideDrawerView} from "./SideDrawer";
 // Remember to rename these classes and interfaces!
@@ -8,18 +7,10 @@ import {SideDrawerView} from "./SideDrawer";
 export default class AiChat extends Plugin {
 	settings: AiChatSettings;
 	documentStore: DocumentStore;
-	chatBox: ChatBox;
-	filesToReprocess: Set<string> = new Set();
 	private statusBar: HTMLElement;
 
 	async onload() {
 		await this.loadSettings();
-		// This creates an icon in the left ribbon.
-		const ribbonIconElChat = this.addRibbonIcon('message-square' , 'AI-Chat', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('Welcome to AI Chat!');
-			this.chatBox.open();
-		});
 
 		const ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
@@ -35,14 +26,15 @@ export default class AiChat extends Plugin {
 			const numberOfDocuments = await this.documentStore.getTotalNumberOfIndexedDocuments();
 			new Notice('Total number of indexed documents indexed: ' + numberOfDocuments);
 		});
+		// Register the new view
+		this.registerView('ai-chat-side-drawer', (leaf) => new SideDrawerView(leaf, this));
 
+		// Add a command to open the side drawer
 		this.addCommand({
-            id: 'open-chat-modal',
-            name: 'Open Chat',
-            callback: () => {
-                this.chatBox.open();
-            }
-        })
+			id: 'chat-side-drawer',
+			name: 'Open Chat Side View',
+			callback: () => this.activateView(),
+		});
 
 		// Perform additional things with the ribbon
 		ribbonIconElIndex.addClass('current-file-indexed');
@@ -50,15 +42,6 @@ export default class AiChat extends Plugin {
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		this.statusBar = this.addStatusBarItem();
 
-		// Register the new view
-		this.registerView('ai-chat-side-drawer', (leaf) => new SideDrawerView(leaf, this));
-
-		// Add a command to open the side drawer
-		this.addCommand({
-			id: 'open-ai-chat-side-drawer',
-			name: 'Open AI Chat Side View',
-			callback: () => this.activateView(),
-		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
@@ -77,7 +60,6 @@ export default class AiChat extends Plugin {
 
 		this.documentStore = new DocumentStore(this.app, this, ".datastoreAiChat", this.statusBar);
 		await this.documentStore.onload();
-		this.chatBox = new ChatBox(this.app, this);
 	}
 
 	onunload() {
