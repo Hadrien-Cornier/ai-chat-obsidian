@@ -1,16 +1,15 @@
 import AiChat from './main';
 import {App, Notice, TFile} from 'obsidian';
-
 import {
 	Document,
-	Metadata,
 	Ollama,
 	OllamaEmbedding,
 	Response,
 	RetrieverQueryEngine,
-	Settings,
+	Settings, SimpleVectorStore,
 	VectorStoreIndex
 } from 'llamaindex';
+import {DocStoreStrategy} from "./types";
 
 export class DocumentStore {
     private app: App;
@@ -21,12 +20,15 @@ export class DocumentStore {
     private storagePath: string;
 	private statusBar: HTMLElement;
     // private nodePostprocessor: BaseNodePostprocessor;
+	private vectorStore: SimpleVectorStore;
 
-    constructor(app: App, plugin: AiChat, storagePath: string, statusBar: HTMLElement) {
+	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "_storage_") {
       this.app = app;
       this.plugin = plugin;
       this.storagePath = storagePath;
 	  this.statusBar = statusBar;
+	  Settings.llm = new Ollama({ model: this.plugin.settings.modelName });
+	  Settings.embedModel = new OllamaEmbedding({ model: this.plugin.settings.modelName });
      }
   
     async onload() {
@@ -78,14 +80,28 @@ export class DocumentStore {
 		fileContent = this.preprocessDocumentText(fileContent);
 		return new Document({ text: fileContent });
 	}
-
     public async initializeIndex(llamaDocument: Document): Promise<void> {
-      Settings.llm = new Ollama({ model: "llama2" });
-      Settings.embedModel = new OllamaEmbedding({ model: "llama2" });
-      this.index = await VectorStoreIndex.fromDocuments([llamaDocument]);
-      this.queryEngine = this.index.asQueryEngine();
+		if (this.storagePath != null){
+			try {
+				this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
+				await this.index.insert(llamaDocument);
+			} catch (e) {
+				this.index = await VectorStoreIndex.fromDocuments([llamaDocument], {storageContext: this.storageContext ,  logProgress: true, docStoreStrategy: DocStoreStrategy.UPSERTS});
+			}
+		}
+		else {
+			this.index = await VectorStoreIndex.fromDocuments([llamaDocument], {storageContext: this.storageContext, logProgress: true, docStoreStrategy: DocStoreStrategy.UPSERTS});
+		}
+        this.queryEngine = this.index.asQueryEngine();
 	    console.log("Index initialized");
+		await this.persistIndex();
+		console.log("Index persisted");
     }
+
+	public async persistIndex(): Promise<void> {
+		this.index.storageContext.docStore.persist();
+		await this.index.storageContext.indexStore.persist();
+	}
 
     public async getTotalNumberOfIndexedDocuments(): Promise<number> {
 		if (this.index) {
