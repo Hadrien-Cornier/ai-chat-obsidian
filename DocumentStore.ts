@@ -1,16 +1,16 @@
 import AiChat from './main';
-import {App, Notice, TFile} from 'obsidian';
+import {App, Notice, TFile, Vault} from 'obsidian';
 import {
 	Document,
 	Ollama,
 	OllamaEmbedding,
 	Response,
 	RetrieverQueryEngine,
-	Settings, SimpleVectorStore,
-	VectorStoreIndex
+	Settings,
+	VectorStoreIndex,
 } from 'llamaindex';
+import {GenericFileSystem} from '@llamaindex/env';
 import {DocStoreStrategy} from "./types";
-
 export class DocumentStore {
     private app: App;
     private readonly plugin: AiChat;
@@ -19,14 +19,15 @@ export class DocumentStore {
     private storageContext: any;
     private storagePath: string;
 	private statusBar: HTMLElement;
-    // private nodePostprocessor: BaseNodePostprocessor;
-	private vectorStore: SimpleVectorStore;
+	private fileSystem: ObsidianFileSystem;
+	// private nodePostprocessor: BaseNodePostprocessor;
 
 	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "_storage_") {
       this.app = app;
       this.plugin = plugin;
       this.storagePath = storagePath;
 	  this.statusBar = statusBar;
+	  this.fileSystem = new ObsidianFileSystem(this.app.vault);
 	  Settings.llm = new Ollama({ model: this.plugin.settings.modelName });
 	  Settings.embedModel = new OllamaEmbedding({ model: this.plugin.settings.modelName });
      }
@@ -95,12 +96,23 @@ export class DocumentStore {
         this.queryEngine = this.index.asQueryEngine();
 	    console.log("Index initialized");
 		await this.persistIndex();
-		console.log("Index persisted");
     }
 
+	public async loadFromIndex(): Promise<void> {
+		new Notice("Loading ...")
+		// @ts-ignore //this.storageContext
+		this.index = await VectorStoreIndex.init({storageContext: this.storageContext, fs: this.fileSystem});
+		new Notice("Loaded From Index : " + this.storagePath)
+	}
+
+
 	public async persistIndex(): Promise<void> {
-		this.index.storageContext.docStore.persist();
-		await this.index.storageContext.indexStore.persist();
+		new Notice("Persisting ...")
+		// @ts-ignore
+		this.index.storageContext.docStore.persist(this.storagePath, this.fileSystem);
+		// @ts-ignore
+		await this.index.storageContext.indexStore.persist(this.storagePath, this.fileSystem);
+		new Notice("docStore persisted to disk : " + this.storagePath)
 	}
 
     public async getTotalNumberOfIndexedDocuments(): Promise<number> {
@@ -137,3 +149,68 @@ export class DocumentStore {
 		return response;
     }
    }
+
+
+   class ObsidianFileSystem implements GenericFileSystem {
+
+	   private vault: Vault;
+
+	   constructor(vault: Vault) {
+		   this.vault = vault;
+	   }
+
+	   async access(path: string): Promise<void> {
+		   const file = this.vault.getAbstractFileByPath(path);
+		   if (!file) {
+			   throw new Error(`File ${path} does not exist`);
+		   }
+	   }
+
+	   // @ts-ignore
+	   async mkdir(path: string): Promise<void> {
+		   await this.vault.createFolder(path);
+	   }
+
+	   // async mkdir(path: string, options: {recursive: boolean}): Promise<string | undefined> {
+		//    await this.vault.createFolder(path);
+	   // }
+
+	   // @ts-ignore
+	   async mkdir(path: string, options?: {recursive: boolean}): Promise<string|undefined> {
+		   try{
+			   const f = await this.vault.createFolder(path);
+			   return f.path;
+		   }
+		   catch(e){
+			   console.log(e);
+			   return undefined;
+		   }
+	   }
+
+
+	   async readRawFile(path: string): Promise<Buffer> {
+		   const file = this.vault.getAbstractFileByPath(path) as TFile;
+		   if (!file) {
+			   throw new Error(`File ${path} does not exist`);
+		   }
+		   return  Buffer.from(await this.vault.readBinary(file));
+
+	   }
+	   async readFile(path: string, options?: any): Promise<string> {
+		   const file = this.vault.getAbstractFileByPath(path) as TFile;
+		   if (!file) {
+			   throw new Error(`File ${path} does not exist`);
+		   }
+		   return await this.vault.read(file);
+	   }
+
+	   async writeFile(path: string, content: string, options?: any): Promise<void> {
+		   let file = this.vault.getAbstractFileByPath(path) as TFile;
+		   if (!file) {
+			   await this.vault.create(path, content);
+		   } else {
+			   await this.vault.modify(file, content);
+		   }
+	   }
+
+}

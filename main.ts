@@ -38,6 +38,17 @@ export default class AiChat extends Plugin {
 			callback: () => this.activateView(),
 		});
 
+		this.addCommand({
+			id: 'persist-documents',
+			name: 'Persist Index',
+			callback: () => this.documentStore.persistIndex(),
+		});
+
+		this.addCommand({
+			id: 'load-documents',
+			name: 'Load Index',
+			callback: () => this.documentStore.loadFromIndex(),
+		});
 		// Perform additional things with the ribbon
 		this.ribbonIconElIndex.addClass('current-file-indexed');
 
