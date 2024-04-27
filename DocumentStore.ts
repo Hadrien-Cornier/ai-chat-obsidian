@@ -6,7 +6,7 @@ import {
 	OllamaEmbedding,
 	Response,
 	RetrieverQueryEngine,
-	Settings,
+	Settings, storageContextFromDefaults,
 	VectorStoreIndex,
 } from 'llamaindex';
 import {GenericFileSystem} from '@llamaindex/env';
@@ -22,7 +22,7 @@ export class DocumentStore {
 	private fileSystem: ObsidianFileSystem;
 	// private nodePostprocessor: BaseNodePostprocessor;
 
-	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "_storage_") {
+	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "./_storage_") {
       this.app = app;
       this.plugin = plugin;
       this.storagePath = storagePath;
@@ -33,7 +33,9 @@ export class DocumentStore {
      }
   
     async onload() {
-    }
+		// @ts-ignore
+		this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
+	}
 
     onunload() {
     }
@@ -101,17 +103,25 @@ export class DocumentStore {
 	public async loadFromIndex(): Promise<void> {
 		new Notice("Loading ...")
 		// @ts-ignore //this.storageContext
-		this.index = await VectorStoreIndex.init({storageContext: this.storageContext, fs: this.fileSystem});
+		const newStorageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
+		this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
 		new Notice("Loaded From Index : " + this.storagePath)
 	}
 
 
 	public async persistIndex(): Promise<void> {
 		new Notice("Persisting ...")
+		// // @ts-ignore
+		// this.index.storageContext.docStore.persist(this.storagePath, this.fileSystem);
+		// // @ts-ignore
+		// await this.index.storageContext.indexStore.persist(this.storagePath, this.fileSystem);
 		// @ts-ignore
-		this.index.storageContext.docStore.persist(this.storagePath, this.fileSystem);
+		// await this.index.indexStore.persist(this.storagePath, this.fileSystem);
+		// // @ts-ignore
+		// await this.index.vectorStore.persist(this.storagePath, this.fileSystem);
 		// @ts-ignore
-		await this.index.storageContext.indexStore.persist(this.storagePath, this.fileSystem);
+		// const newStorageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
+		// await this.index.storageContext.; // Correct method to persist all components
 		new Notice("docStore persisted to disk : " + this.storagePath)
 	}
 
@@ -205,7 +215,9 @@ export class DocumentStore {
 	   }
 
 	   async writeFile(path: string, content: string, options?: any): Promise<void> {
+		   console.log("writing file to path: ", path);
 		   let file = this.vault.getAbstractFileByPath(path) as TFile;
+		   console.log("file: ", file);
 		   if (!file) {
 			   await this.vault.create(path, content);
 		   } else {
