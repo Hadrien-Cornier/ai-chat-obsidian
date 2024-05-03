@@ -39,3 +39,5 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] add a command to index all documents in the vault
 - [ ] make the chat side drawer look nicer
 - [ ] persist/load the document store in a file
+
+- [ ] add tool to scrap data in response to search
