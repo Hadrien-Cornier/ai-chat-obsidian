@@ -67,6 +67,63 @@ export class DocumentStore {
 		return result;
 	}
 
+	public async addDocumentPath(filePath: string): Promise<number> {
+		// Create a span element for the loading icon
+		const loadingIcon = document.createElement('span');
+		loadingIcon.innerText = '.';
+		loadingIcon.id = 'loading-icon'; // Add an id to the loading icon
+		loadingIcon.classList.add('loading-icon');
+
+		// Add the title attribute to the loading icon
+		loadingIcon.setAttribute('title', 'Indexing in progress');
+
+		// Add the loading icon to the status bar
+		this.statusBar.appendChild(loadingIcon);
+
+		const result = await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+
+		// Remove the loading icon from the status bar
+		this.statusBar.removeChild(loadingIcon);
+
+		// Check if the indexed file is the active file
+		if (filePath === this.app.workspace.getActiveFile().path) {
+			this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
+			this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
+		}
+
+		return result;
+	}
+
+	public async addAllDocuments(filePaths: Array<string>): Promise<void> {
+		// Create a span element for the loading icon
+		const loadingIcon = document.createElement('span');
+		loadingIcon.innerText = '.';
+		loadingIcon.id = 'loading-icon';// Add an id to the loading icon
+		loadingIcon.classList.add('loading-icon');
+
+		// Add the title attribute to the loading icon
+		loadingIcon.setAttribute('title', 'Indexing in progress');
+
+		// Add the loading icon to the status bar
+		this.statusBar.appendChild(loadingIcon);
+
+		// for filepath in filepaths
+		for (const filePath of filePaths) {
+			// update the tile of the loading icon with the number of files left to index
+			loadingIcon.innerText = `Indexing ${filePaths.length} files left`;
+			loadingIcon.setAttribute('title', `Indexing ${filePaths.length} files left`);
+			await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
+			// Check if the indexed file is the active file
+			if (filePath === this.app.workspace.getActiveFile().path) {
+				this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
+				this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
+			}
+		}
+
+		// Remove the loading icon from the status bar
+		this.statusBar.removeChild(loadingIcon);
+	}
+
 	public preprocessDocumentText(text: string): string {
 		if (this.plugin && this.plugin.settings && this.plugin.settings.stripUrls) {
 			// Use a regular expression to remove URLs from the text

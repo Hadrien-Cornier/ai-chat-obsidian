@@ -38,6 +38,13 @@ export default class AiChat extends Plugin {
 			callback: () => this.activateView(),
 		});
 
+		// Add a command to open the side drawer
+		this.addCommand({
+			id: 'async-index-all',
+			name: 'Index All Files',
+			callback: () => this.documentStore.addAllDocuments(this.app.vault.getMarkdownFiles().map(file => file.path)),
+		});
+
 		this.addCommand({
 			id: 'persist-documents',
 			name: 'Persist Index',
@@ -81,6 +88,19 @@ export default class AiChat extends Plugin {
 		}
 	}
 	onunload() {
+
+	}
+
+	async indexAllFiles() {
+		const files = this.app.vault.getMarkdownFiles();
+		for (const file of files) {
+			// check if the file is already indexed
+			// if not, index it
+			if (!this.documentStore.isIndexed(file.path)) {
+				await this.documentStore.addDocumentPath(file.path);
+			}
+			await this.documentStore.addDocumentPath(file.path);
+		}
 
 	}
 	// Function to activate the view
