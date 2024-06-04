@@ -52,6 +52,19 @@ export default class AiChat extends Plugin {
 		});
 
 		this.addCommand({
+			id: 'summarize-current-page',
+			name: 'Summarize Current Page',
+			callback: async () => {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (activeFile) {
+					const summary = await this.documentStore.summarizeTFile(activeFile);
+					await this.app.vault.modify(activeFile, `\n\n## Summary\n\n${summary}`);
+					new Notice('Summary has been appended to the current file.');
+				}
+			},
+		});
+
+		this.addCommand({
 			id: 'load-documents',
 			name: 'Load Index',
 			callback: () => this.documentStore.loadFromIndex(),

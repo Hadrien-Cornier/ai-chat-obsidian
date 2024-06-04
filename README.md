@@ -1,6 +1,12 @@
 # ai-chat-obsidian
 Talk to your obsidian notes
 
+# how to run
+
+```bash
+npm install
+npm run dev
+```
 # Bugs currently
 
 llamaindex has a bunch of old dependencies that are buggy because there are so many features.
@@ -27,6 +33,7 @@ also if ollama request is blocked because of CORS, you can do this :
 - [X] display loading bar when indexing in the status bar at the bottom.
 - [X] display a loading bar in chatbox
 - [X] make icon toggle when current file is indexed and hasn't been modified
+- [X] add a command to index all documents in the vault
 
 # Upcoming features
 - [ ] add tool that can query the internet for information
@@ -35,8 +42,9 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] add editor command to rewrite selection with the llm
 - [ ] add editor command to autocomplete the current line with llms
 - [ ] use Promise.all(...) to insert all documents with a command
-- [ ] figure out a way to report progress to the user of the indexing time left
-- [ ] add a command to index all documents in the vault
+- [ ] add a command to summarize a page
+
+[//]: # (- [ ] figure out a way to report progress to the user of the indexing time left)
 - [ ] make the chat side drawer look nicer
 - [ ] persist/load the document store in a file
 

@@ -11,6 +11,8 @@ import {
 } from 'llamaindex';
 import {GenericFileSystem} from '@llamaindex/env';
 import {DocStoreStrategy} from "./types";
+const maxWords = 2000;
+
 export class DocumentStore {
     private app: App;
     private readonly plugin: AiChat;
@@ -39,33 +41,6 @@ export class DocumentStore {
 
     onunload() {
     }
-
-	public async addDocumentPath(filePath: string): Promise<number> {
-		// Create a span element for the loading icon
-		const loadingIcon = document.createElement('span');
-		loadingIcon.innerText = '.';
-		loadingIcon.id = 'loading-icon'; // Add an id to the loading icon
-		loadingIcon.classList.add('loading-icon');
-
-		// Add the title attribute to the loading icon
-		loadingIcon.setAttribute('title', 'Indexing in progress');
-
-		// Add the loading icon to the status bar
-		this.statusBar.appendChild(loadingIcon);
-
-		const result = await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
-
-		// Remove the loading icon from the status bar
-		this.statusBar.removeChild(loadingIcon);
-
-		// Check if the indexed file is the active file
-		if (filePath === this.app.workspace.getActiveFile().path) {
-			this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
-			this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
-		}
-
-		return result;
-	}
 
 	public async addDocumentPath(filePath: string): Promise<number> {
 		// Create a span element for the loading icon
@@ -215,7 +190,59 @@ export class DocumentStore {
 		const response = this.queryEngine.query({ query: prompt });
 		return response;
     }
-   }
+
+
+	async summaryRequest(prompt: string): Promise<Response> {
+		const response = await fetch('http://localhost:11434/api/generate', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				model: 'llama2-uncensored',
+				prompt: prompt
+			})
+		});
+		return response.json();
+	}
+
+
+	async summarizeTFile(activeFile: TFile) {
+		let fileContent: string = await this.app.vault.read(activeFile);
+
+		// Helper function to truncate text to a maximum of 2000 words
+		function truncateToMaxWords(text: string, maxWords: number): string {
+			let words = text.split(' ');
+			if (words.length > maxWords) {
+				words = words.slice(0, maxWords);
+			}
+			return words.join(' ');
+		}
+
+		async function generateSummary(fileContent: string) {
+			// Initialize Ollama with the model name
+			const ollama = new Ollama({ model: 'your-model-name' });
+
+			// maybe later we can add orchestration that summarizes chunks and then summarizes the summaries recursively
+			var prompt_template = "### Instruction:\n" +
+				"Summarize the following text:\n" +
+				"\n" +
+				"### Text:\n" +
+				truncateToMaxWords(fileContent, maxWords) + "\n" +
+				"### Summary:\n"
+
+			// Send a request to the Ollama completion endpoint with the text to be summarized
+			const response = await this.summaryRequest(prompt_template)//await ollama.complete({ prompt: fileContent });
+
+			// The response from the Ollama completion endpoint is the summarized text
+			const summary = response.text;
+
+			return summary;
+		}
+
+		return generateSummary(fileContent);
+	}
+}
 
 
    class ObsidianFileSystem implements GenericFileSystem {
