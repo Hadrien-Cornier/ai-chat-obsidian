@@ -210,6 +210,7 @@ export class DocumentStore {
 
 
 	async summarizeTFile(activeFile: TFile) {
+
 		let fileContent: string = await this.app.vault.read(activeFile);
 
 		// Helper function to truncate text to a maximum of 2000 words
@@ -238,17 +239,17 @@ export class DocumentStore {
 				},
 				body: JSON.stringify({
 					model: 'llama2-uncensored',
-					prompt: prompt_template
+					prompt: prompt_template,
+					stream: false
 				})
 			});
 
 			// Parse the response as JSON
-			const responseData = await response.json();
+			const responseData = await response;
+			// console.log(responseData);
+			const summary = await responseData.text();
 
-			// Extract the summary text from the response data
-			const summary = responseData.choices[0].text;
-
-			return summary;
+			return JSON.parse(summary).response;
 		}
 
 		return generateSummary(fileContent);

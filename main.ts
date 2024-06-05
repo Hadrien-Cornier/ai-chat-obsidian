@@ -58,7 +58,9 @@ export default class AiChat extends Plugin {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (activeFile) {
 					const summary = await this.documentStore.summarizeTFile(activeFile);
-					await this.app.vault.modify(activeFile, `\n\n## Summary\n\n${summary}`);
+					const currentContent = await this.app.vault.read(activeFile);
+					const updatedContent = `#llama2-uncensored \n\n___\n\n## Summary\n\n${summary}\n\n___\n\n`  + currentContent ;
+					await this.app.vault.modify(activeFile, updatedContent);
 					new Notice('Summary has been appended to the current file.');
 				}
 			},
