@@ -192,19 +192,21 @@ export class DocumentStore {
     }
 
 
-	async summaryRequest(prompt: string): Promise<Response> {
-		const response = await fetch('http://localhost:11434/api/generate', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				model: 'llama2-uncensored',
-				prompt: prompt
-			})
-		});
-		return response.json();
-	}
+	// public async summaryRequest(prompt: string): Promise<Response> {
+	// 	const answer = async () => {
+	// 		return await fetch('http://localhost:11434/api/generate', {
+	// 			method: 'POST',
+	// 			headers: {
+	// 				'Content-Type': 'application/json'
+	// 			},
+	// 			body: JSON.stringify({
+	// 				model: 'llama2-uncensored',
+	// 				prompt: prompt
+	// 			})
+	// 		}).json();
+	// 	}
+	// 	return answer();
+	// }
 
 
 	async summarizeTFile(activeFile: TFile) {
@@ -220,9 +222,6 @@ export class DocumentStore {
 		}
 
 		async function generateSummary(fileContent: string) {
-			// Initialize Ollama with the model name
-			const ollama = new Ollama({ model: 'your-model-name' });
-
 			// maybe later we can add orchestration that summarizes chunks and then summarizes the summaries recursively
 			var prompt_template = "### Instruction:\n" +
 				"Summarize the following text:\n" +
@@ -232,10 +231,22 @@ export class DocumentStore {
 				"### Summary:\n"
 
 			// Send a request to the Ollama completion endpoint with the text to be summarized
-			const response = await this.summaryRequest(prompt_template)//await ollama.complete({ prompt: fileContent });
+			const response = await fetch('http://localhost:11434/api/generate', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					model: 'llama2-uncensored',
+					prompt: prompt_template
+				})
+			});
 
-			// The response from the Ollama completion endpoint is the summarized text
-			const summary = response.text;
+			// Parse the response as JSON
+			const responseData = await response.json();
+
+			// Extract the summary text from the response data
+			const summary = responseData.choices[0].text;
 
 			return summary;
 		}
