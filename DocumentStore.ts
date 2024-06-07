@@ -145,14 +145,14 @@ export class DocumentStore {
 			});
 		}
 		this.queryEngine = this.index.asQueryEngine();
-		console.log("Index initialized");
+		//console.log("Index initialized");
 	}
 
 	public async getTotalNumberOfIndexedDocuments(): Promise<number> {
 		if (this.index) {
 			const docRecord = await this.index.docStore.getAllDocumentHashes();
 			const documentList = Object.keys(docRecord);
-			console.log("retrieved document list from the vector index : ", documentList);
+			//console.log("retrieved document list from the vector index : ", documentList);
 			return documentList.length;
 		}
 		return 0;
@@ -169,7 +169,7 @@ export class DocumentStore {
 			await this.index.insert(llamaDocument);
 		}
 		this.queryEngine = this.index.asQueryEngine();
-		console.log("inserted llamaDocument into index")
+		//console.log("inserted llamaDocument into index")
 		return this.getTotalNumberOfIndexedDocuments();
 	}
 
@@ -285,17 +285,17 @@ class ObsidianFileSystem implements GenericFileSystem {
 	}
 
 	async writeFile(path: string, content: string, options?: any): Promise<void> {
-		console.log("writing file to path: ", path);
+		//console.log("writing file to path: ", path);
 		let file = this.vault.getAbstractFileByPath(path) as TFile;
-		console.log("file: ", file);
+		//console.log("file: ", file);
 		if (!file) {
-			console.log(`File ${path} does not exist, creating new file.`);
+			//console.log(`File ${path} does not exist, creating new file.`);
 			await this.vault.create(path, content);
-			console.log("file created");
+			//console.log("file created");
 		} else {
-			console.log(`File ${path} exists, modifying existing file.`);
+			//console.log(`File ${path} exists, modifying existing file.`);
 			await this.vault.modify(file, content);
-			console.log("file modified");
+			//console.log("file modified");
 		}
 	}
 

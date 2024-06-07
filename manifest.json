@@ -1,6 +1,6 @@
 {
 	"id": "ai-ollama-assistant",
-	"name": "ai-ollama-assistant",
+	"name": "AI Ollama Assistant",
 	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Use the AI Ollama Assistant to help you with your notes. It is a simple AI assistant running locally that can help chat with your obsidian vault and summarize pages.",
