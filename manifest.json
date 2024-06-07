@@ -1,11 +1,11 @@
 {
-	"id": "ai-chatbot-rag",
-	"name": "Talk to your notes using AI",
+	"id": "ai-ollama-assistant",
+	"name": "ai-ollama-assistant",
 	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Use the AI Ollama Assistant to help you with your notes. It is a simple AI assistant running locally that can help chat with your obsidian vault and summarize pages.",
+	"author": "Hadrien Cornier",
+	"authorUrl": "https://hadrien-cornier.github.io/",
+	"fundingUrl": "https://hadrien-cornier.github.io/",
 	"isDesktopOnly": false
 }

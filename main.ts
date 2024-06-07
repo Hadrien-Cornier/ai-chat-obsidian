@@ -1,6 +1,6 @@
 import {App, Notice, Plugin, PluginSettingTab, Setting, TFile} from 'obsidian';
-import { DocumentStore } from './DocumentStore';
-import { AiChatSettings, DEFAULT_SETTINGS } from './types';
+import {DocumentStore} from './DocumentStore';
+import {AiChatSettings, DEFAULT_SETTINGS} from './types';
 import {SideDrawerView} from "./SideDrawer";
 // Remember to rename these classes and interfaces!
 
@@ -16,7 +16,7 @@ export default class AiChat extends Plugin {
 
 		this.ribbonIconElIndex = this.addRibbonIcon('archive-restore', 'Index Current File', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			const activeFile = this.app.workspace.getActiveFile();	
+			const activeFile = this.app.workspace.getActiveFile();
 			if (activeFile) {
 				const numberOfDocuments = await this.documentStore.addDocumentPath(activeFile.path);
 				new Notice('Reindexed current file ! Total number of indexed documents indexed: ' + numberOfDocuments);
@@ -46,12 +46,6 @@ export default class AiChat extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'persist-documents',
-			name: 'Persist Index',
-			callback: () => this.documentStore.persistIndex(),
-		});
-
-		this.addCommand({
 			id: 'summarize-current-page',
 			name: 'Summarize Current Page',
 			callback: async () => {
@@ -59,7 +53,7 @@ export default class AiChat extends Plugin {
 				if (activeFile) {
 					const summary = await this.documentStore.summarizeTFile(activeFile);
 					const currentContent = await this.app.vault.read(activeFile);
-					const updatedContent = `#llama2-uncensored \n\n___\n\n## Summary\n\n${summary}\n\n___\n\n`  + currentContent ;
+					const updatedContent = `#llama2-uncensored \n\n___\n\n## Summary\n\n${summary}\n\n___\n\n` + currentContent;
 					await this.app.vault.modify(activeFile, updatedContent);
 					new Notice('Summary has been appended to the current file.');
 				}
@@ -96,28 +90,18 @@ export default class AiChat extends Plugin {
 		this.documentStore = new DocumentStore(this.app, this, this.statusBar);
 		await this.documentStore.onload();
 	}
+
 	private handleFileModify(file: TFile) {
 		if (file === this.app.workspace.getActiveFile()) {
 			this.ribbonIconElIndex.removeClass('current-file-indexed');
 			this.ribbonIconElIndex.addClass('current-file-not-indexed');
 		}
 	}
+
 	onunload() {
 
 	}
 
-	async indexAllFiles() {
-		const files = this.app.vault.getMarkdownFiles();
-		for (const file of files) {
-			// check if the file is already indexed
-			// if not, index it
-			if (!this.documentStore.isIndexed(file.path)) {
-				await this.documentStore.addDocumentPath(file.path);
-			}
-			await this.documentStore.addDocumentPath(file.path);
-		}
-
-	}
 	// Function to activate the view
 	async activateView() {
 		this.app.workspace.detachLeavesOfType('ai-chat-side-drawer');
@@ -136,6 +120,7 @@ export default class AiChat extends Plugin {
 			this.app.workspace.getLeavesOfType('ai-chat-side-drawer')[0]
 		);
 	}
+
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
@@ -181,6 +166,6 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				}));
 
-		
+
 	}
 }
