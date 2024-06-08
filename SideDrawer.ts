@@ -1,5 +1,5 @@
 import {ItemView, WorkspaceLeaf, TextComponent, ButtonComponent, Notice} from 'obsidian';
-import {ChatBox, ChatHistory} from "./ChatBox";
+import {ChatHistory} from "./ChatBox";
 import {DocumentStore} from "./DocumentStore";
 import AiChat from "./main";
 
@@ -53,6 +53,17 @@ export class SideDrawerView extends ItemView {
 					const answerWithoutModelName = lastAnswer.split(':').slice(1).join(':').trim();
 					new Notice('Copied answer');
 					navigator.clipboard.writeText(answerWithoutModelName);
+				}
+			});
+		const saveButton = new ButtonComponent(container as HTMLElement)
+			.setButtonText('Save Conversation')
+			.onClick(async () => {
+				const messages = this.chatHistory.getHistory();
+				if (messages.length > 0) {
+					const conversation = messages.join('\n');
+					const filePath = '/path/to/conversation/file.md'; // Replace with the desired path
+					await this.plugin.app.vault.create(filePath, conversation);
+					new Notice('Conversation saved');
 				}
 			});
 	}

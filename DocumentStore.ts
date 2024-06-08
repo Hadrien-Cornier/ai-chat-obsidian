@@ -1,9 +1,10 @@
 import AiChat from './main';
 import {App, Notice, TFile, Vault} from 'obsidian';
 import {
+	AgentChatResponse,
 	Document,
 	Ollama,
-	OllamaEmbedding,
+	OllamaEmbedding, QueryEngineTool, ReActAgent,
 	Response,
 	RetrieverQueryEngine,
 	Settings, StorageContext, storageContextFromDefaults,
@@ -23,8 +24,7 @@ export class DocumentStore {
 	private readonly storagePath: string;
 	private statusBar: HTMLElement;
 	private readonly fileSystem: ObsidianFileSystem;
-
-	// private nodePostprocessor: BaseNodePostprocessor;
+	private agent: ReActAgent;
 
 	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "./_storage_") {
 		this.app = app;
@@ -34,6 +34,9 @@ export class DocumentStore {
 		this.fileSystem = new ObsidianFileSystem(this.app.vault);
 		Settings.llm = new Ollama({model: this.plugin.settings.modelName});
 		Settings.embedModel = new OllamaEmbedding({model: this.plugin.settings.modelName});
+		Settings.callbackManager.on("llm-tool-call", (event) => {
+			console.log(event.detail.payload);
+		});
 	}
 
 	async onload() {
@@ -41,35 +44,51 @@ export class DocumentStore {
 		await this.fileSystem.mkdir(this.storagePath, {recursive: true});
 		this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
 		await this.loadFromIndex();
+
+		// Settings.callbackManager.on("llm-tool-result", (event) => {
+		// 	console.log(event.detail.payload);
+		// });
+		this.initializeAgent();
+
+	}
+
+	private initializeAgent() {
+		this.queryEngine = this.index.asQueryEngine();
+        // the agent can choose to retrieve more info or not
+		const tools = [
+			new QueryEngineTool({
+				queryEngine: this.queryEngine,
+				metadata: {
+					name: "note-reading-tool",
+					description: `This tool can answer questions about the contents of notes.`,
+				},
+			}),
+		];
+		this.agent = new ReActAgent({tools});
 	}
 
 	public async loadFromIndex(): Promise<void> {
 		new Notice("Loading ...")
-		// @ts-ignore //this.storageContext
+		// @ts-ignore
 		const newStorageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
 		this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
 		new Notice("Loaded From Index : " + this.storagePath)
 	}
 
 	public async addDocumentPath(filePath: string): Promise<number> {
-		// Create a span element for the loading icon
 		const loadingIcon = document.createElement('span');
 		loadingIcon.innerText = '.';
-		loadingIcon.id = 'loading-icon'; // Add an id to the loading icon
+		loadingIcon.id = 'loading-icon';
 		loadingIcon.classList.add('loading-icon');
 
-		// Add the title attribute to the loading icon
 		loadingIcon.setAttribute('title', 'Indexing in progress');
 
-		// Add the loading icon to the status bar
 		this.statusBar.appendChild(loadingIcon);
 
 		const result = await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
 
-		// Remove the loading icon from the status bar
 		this.statusBar.removeChild(loadingIcon);
 
-		// Check if the indexed file is the active file
 		if (filePath === this.app.workspace.getActiveFile().path) {
 			this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
 			this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
@@ -79,21 +98,13 @@ export class DocumentStore {
 	}
 
 	public async addAllDocuments(filePaths: Array<string>): Promise<void> {
-		// Create a span element for the loading icon
 		const loadingIcon = document.createElement('span');
 		loadingIcon.innerText = '.';
-		loadingIcon.id = 'loading-icon';// Add an id to the loading icon
+		loadingIcon.id = 'loading-icon';
 		loadingIcon.classList.add('loading-icon');
-
-		// Add the title attribute to the loading icon
 		loadingIcon.setAttribute('title', 'Indexing in progress');
-
-		// Add the loading icon to the status bar
 		this.statusBar.appendChild(loadingIcon);
-
-		// for filepath in filepaths
 		for (const filePath of filePaths) {
-			// update the tile of the loading icon with the number of files left to index
 			loadingIcon.innerText = `*`;
 			loadingIcon.setAttribute('title', `Indexing ${filePaths.length} files left`);
 			await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
@@ -175,16 +186,18 @@ export class DocumentStore {
 		return this.getTotalNumberOfIndexedDocuments();
 	}
 
-	public async answer(prompt: string): Promise<Response> {
-		if (this.index && !this.queryEngine) {
-			this.queryEngine = this.index.asQueryEngine();
+	public async answer(prompt: string): Promise<AgentChatResponse> {
+		if (!this.agent){  // this.index && !this.queryEngine) {
+			this.initializeAgent();
+			//this.queryEngine = this.index.asQueryEngine();
 		}
 		if (!this.queryEngine) {
 			new Notice("No documents indexed yet. Please index some documents first.");
-			return new Response("No documents indexed yet. Please index some documents first.");
+			return new AgentChatResponse("No documents indexed yet. Please index some documents first.");
 		}
-		console.log("query_engine : ", this.queryEngine);
-		const response = this.queryEngine.query({query: prompt});
+		const response = this.agent.chat({
+			message: prompt,
+		})//this.queryEngine.query({query: prompt});
 		return response;
 	}
 
@@ -257,10 +270,6 @@ class ObsidianFileSystem implements GenericFileSystem {
 		await this.vault.createFolder(path);
 	}
 
-	// async mkdir(path: string, options: {recursive: boolean}): Promise<string | undefined> {
-	//    await this.vault.createFolder(path);
-	// }
-
 	// @ts-ignore
 	async mkdir(path: string, options?: { recursive: boolean }): Promise<string | undefined> {
 		let f = this.vault.getAbstractFileByPath(path);
@@ -291,17 +300,11 @@ class ObsidianFileSystem implements GenericFileSystem {
 	}
 
 	async writeFile(path: string, content: string, options?: any): Promise<void> {
-		//console.log("writing file to path: ", path);
 		let file = this.vault.getAbstractFileByPath(path) as TFile;
-		//console.log("file: ", file);
 		if (!file) {
-			//console.log(`File ${path} does not exist, creating new file.`);
 			await this.vault.create(path, content);
-			//console.log("file created");
 		} else {
-			//console.log(`File ${path} exists, modifying existing file.`);
 			await this.vault.modify(file, content);
-			//console.log("file modified");
 		}
 	}
 
