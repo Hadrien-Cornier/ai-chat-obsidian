@@ -1,10 +1,10 @@
 import AiChat from './main';
 import {App, Notice, TFile, Vault} from 'obsidian';
 import {
-	AgentChatResponse,
+	AgentChatResponse, BaseIndexStore,
 	Document,
 	Ollama,
-	OllamaEmbedding, QueryEngineTool, ReActAgent,
+	OllamaEmbedding, OpenAIAgent, QueryEngineTool, ReActAgent,
 	Response,
 	RetrieverQueryEngine,
 	Settings, StorageContext, storageContextFromDefaults,
@@ -13,8 +13,7 @@ import {
 import {GenericFileSystem} from '@llamaindex/env';
 import {DocStoreStrategy} from "./types";
 import {BaseTool} from "llamaindex/dist/type/types";
-
-const maxWords = 2000;
+import * as dotenv from 'dotenv';
 
 export class DocumentStore {
 	private app: App;
@@ -25,20 +24,25 @@ export class DocumentStore {
 	private readonly storagePath: string;
 	private statusBar: HTMLElement;
 	private readonly fileSystem: ObsidianFileSystem;
-	private agent: ReActAgent;
+	private agent: OpenAIAgent;
 	private tools: BaseTool[];
 
-	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "./_storage_") {
+	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "_storage_") {
 		this.app = app;
 		this.plugin = plugin;
 		this.storagePath = storagePath;
 		this.statusBar = statusBar;
+		dotenv.config({ path: process.cwd()+'/config/.env'});
+		let openAIKey = process.env.OPENAI_API_KEY;
+
+		console.log("openAIKey: ", openAIKey);
 		this.fileSystem = new ObsidianFileSystem(this.app.vault);
 		Settings.llm = new Ollama({model: this.plugin.settings.modelName});
 		Settings.embedModel = new OllamaEmbedding({model: this.plugin.settings.modelName});
 		Settings.callbackManager.on("llm-tool-call", (event) => {
 			console.log(event.detail.payload);
 		});
+
 	}
 
 	async onload() {
@@ -70,13 +74,36 @@ export class DocumentStore {
 			}),
 		];
 		const tools = this.tools;
-		this.agent = new ReActAgent({tools});
+		this.agent = new OpenAIAgent({tools});
 	}
 
 	public async loadFromIndex(): Promise<void> {
+
+		// helper funcs
+		async function getFirstIndexStruct(indexStore :  BaseIndexStore) {
+			// Get the array or other data structure that stores the index structures
+			let indexStructs = await indexStore.getIndexStructs();
+			// If there are no index structures, return null or throw an error
+			if (indexStructs.length === 0) {
+				return null;
+			}
+			// Return the first index structure
+			return indexStructs[0];
+		}
+
+
+		//
 		new Notice("Loading ...")
 		// @ts-ignore
 		const newStorageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
+		if (await getFirstIndexStruct(newStorageContext.indexStore)) {
+			console.log('The storageContext contains an indexStruct');
+			this.deleteAllIndexStructs(newStorageContext.indexStore);
+		} else {
+			console.log('The storageContext does not contain an indexStruct');
+		}
+		// set the indexStruct of newStorageContext.indexStore to the first one
+		// newStorageContext.indexStore.deleteIndexStruct() = await getFirstIndexStruct(newStorageContext.indexStore);
 		this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
 		new Notice("Loaded From Index : " + this.storagePath)
 	}
@@ -143,26 +170,29 @@ export class DocumentStore {
 	}
 
 	public async initializeIndex(llamaDocument: Document): Promise<void> {
-		if (this.storagePath != null) {
-			try {
-				this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
-				await this.index.insert(llamaDocument);
-			} catch (e) {
-				this.index = await VectorStoreIndex.fromDocuments([llamaDocument], {
-					storageContext: this.storageContext,
-					logProgress: true,
-					docStoreStrategy: DocStoreStrategy.DUPLICATES_ONLY
-				});
-			}
-		} else {
+		await this.deleteAllIndexStructs();
+		// Now you can proceed with creating a new indexStruct
+		try {
+			this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
+			await this.index.insert(llamaDocument);
+			console.log("inserted llamaDocument into index")
+		} catch (e) {
 			this.index = await VectorStoreIndex.fromDocuments([llamaDocument], {
 				storageContext: this.storageContext,
 				logProgress: true,
-				docStoreStrategy: DocStoreStrategy.DUPLICATES_ONLY
+				docStoreStrategy: DocStoreStrategy.UPSERTS_AND_DELETE
 			});
+			console.log("called fromDocuments into index")
 		}
-		this.queryEngine = this.index.asQueryEngine();
-		//console.log("Index initialized");
+	}
+
+	private async deleteAllIndexStructs(indexStore: BaseIndexStore = this.storageContext.indexStore) {
+		// Retrieve all indexStructs
+		const indexStructs = await indexStore.getIndexStructs();
+		// Iterate over each indexStruct and delete it
+		for (const indexStruct of indexStructs) {
+			await this.storageContext.indexStore.deleteIndexStruct(indexStruct.indexId);
+		}
 	}
 
 	public async getTotalNumberOfIndexedDocuments(): Promise<number> {
@@ -193,7 +223,7 @@ export class DocumentStore {
 	}
 
 	public async answer(prompt: string): Promise<AgentChatResponse> {
-		if (!this.agent){  // this.index && !this.queryEngine) {
+		if (true){  // this.index && !this.queryEngine) {
 			console.log("No agent found. Initializing agent...");
 			await this.initializeAgent();
 			console.log("Agent initialized");
@@ -230,7 +260,7 @@ export class DocumentStore {
 				"Summarize the following text:\n" +
 				"\n" +
 				"### Text:\n" +
-				truncateToMaxWords(fileContent, maxWords) + "\n" +
+				truncateToMaxWords(fileContent, this.plugin.settings.maxWords) + "\n" +
 				"### Summary:\n"
 
 			// Send a request to the Ollama completion endpoint with the text to be summarized
@@ -285,8 +315,8 @@ class ObsidianFileSystem implements GenericFileSystem {
 		try {
 			f = await this.vault.createFolder(path);
 		} catch (e) {
-			console.log(e);
-			console.log(f)
+			// console.log(e);
+			// console.log(f)
 			// this is when it already exists
 		}
 		return path;

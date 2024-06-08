@@ -24,6 +24,7 @@
 	},
 	"dependencies": {
 		"@llamaindex/env": "^0.0.7",
+		"dotenv": "^16.4.5",
 		"llamaindex": "^0.2.10",
 		"process": "^0.11.10",
 		"punycode": "^2.3.1"
