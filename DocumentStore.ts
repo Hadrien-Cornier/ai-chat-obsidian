@@ -12,6 +12,7 @@ import {
 } from 'llamaindex';
 import {GenericFileSystem} from '@llamaindex/env';
 import {DocStoreStrategy} from "./types";
+import {BaseTool} from "llamaindex/dist/type/types";
 
 const maxWords = 2000;
 
@@ -25,6 +26,7 @@ export class DocumentStore {
 	private statusBar: HTMLElement;
 	private readonly fileSystem: ObsidianFileSystem;
 	private agent: ReActAgent;
+	private tools: BaseTool[];
 
 	constructor(app: App, plugin: AiChat, statusBar: HTMLElement, storagePath: string = "./_storage_") {
 		this.app = app;
@@ -48,14 +50,17 @@ export class DocumentStore {
 		// Settings.callbackManager.on("llm-tool-result", (event) => {
 		// 	console.log(event.detail.payload);
 		// });
-		this.initializeAgent();
+		await this.initializeAgent();
 
 	}
 
-	private initializeAgent() {
+	private async initializeAgent() {
+		if (!this.index) {
+			await this.loadFromIndex();
+		}
 		this.queryEngine = this.index.asQueryEngine();
-        // the agent can choose to retrieve more info or not
-		const tools = [
+		// the agent can choose to retrieve more info or not
+		this.tools = [
 			new QueryEngineTool({
 				queryEngine: this.queryEngine,
 				metadata: {
@@ -64,6 +69,7 @@ export class DocumentStore {
 				},
 			}),
 		];
+		const tools = this.tools;
 		this.agent = new ReActAgent({tools});
 	}
 
@@ -188,7 +194,9 @@ export class DocumentStore {
 
 	public async answer(prompt: string): Promise<AgentChatResponse> {
 		if (!this.agent){  // this.index && !this.queryEngine) {
-			this.initializeAgent();
+			console.log("No agent found. Initializing agent...");
+			await this.initializeAgent();
+			console.log("Agent initialized");
 			//this.queryEngine = this.index.asQueryEngine();
 		}
 		if (!this.queryEngine) {
@@ -198,6 +206,7 @@ export class DocumentStore {
 		const response = this.agent.chat({
 			message: prompt,
 		})//this.queryEngine.query({query: prompt});
+		console.log("response from agent: ", response);
 		return response;
 	}
 
@@ -276,9 +285,11 @@ class ObsidianFileSystem implements GenericFileSystem {
 		try {
 			f = await this.vault.createFolder(path);
 		} catch (e) {
+			console.log(e);
+			console.log(f)
 			// this is when it already exists
 		}
-		return f.path;
+		return path;
 	}
 
 

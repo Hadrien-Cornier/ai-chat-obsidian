@@ -150,9 +150,9 @@ class SettingTab extends PluginSettingTab {
 				dropdown
 					.addOption('llama2', 'Llama2 ollama 7B')
 					.setValue(this.plugin.settings.modelName)
-					.onChange((value) => {
+					.onChange(async (value) => {
 						this.plugin.settings.modelName = value;
-						this.plugin.saveSettings();
+						await this.plugin.saveSettings();
 					});
 			});
 
@@ -161,11 +161,18 @@ class SettingTab extends PluginSettingTab {
 			.setDesc('Enable this option to strip URLs from documents during indexing')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.stripUrls)
-				.onChange(value => {
+				.onChange(async value => {
 					this.plugin.settings.stripUrls = value;
-					this.plugin.saveSettings();
+					await this.plugin.saveSettings();
 				}));
-
-
+		new Setting(containerEl)
+			.setName('Max Words')
+			.setDesc('Maximum number of words to index from a document')
+			.addText(text => text
+				.setValue(this.plugin.settings.maxWords.toString())
+				.onChange(async (value) => {
+					this.plugin.settings.maxWords = parseInt(value);
+					await this.plugin.saveSettings();
+				}));
 	}
 }
