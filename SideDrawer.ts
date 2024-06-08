@@ -23,6 +23,7 @@ export class SideDrawerView extends ItemView {
 	}
 
 	async onOpen() {
+		this.docStore = this.plugin.documentStore;
 		const container = this.containerEl.children[1];
 		container.empty();
 		const historyDiv = container.createDiv();
@@ -65,8 +66,9 @@ export class SideDrawerView extends ItemView {
 		// Create a new div for the loading bar
 		const loadingBar = historyDiv.createDiv({ cls: 'loading-bar' });
 		loadingBar.setText('Loading...'); // Set the text of the loading bar
-
+		console.log('docstore...', this.docStore);
 		const answer = await this.docStore.answer(message);
+		console.log('answer...', answer);
 		if (answer.response) {
 			// Use the model name from the settings instead of 'A:'
 			this.chatHistory.addMessage(this.plugin.settings.modelName + ': ' + answer.response);

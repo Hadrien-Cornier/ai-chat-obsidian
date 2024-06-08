@@ -43,4 +43,4 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] add editor command to rewrite selection with the llm
 - [ ] add editor command to autocomplete the current line with llms
 - [ ] use Promise.all(...) to insert all documents with a command
-- [ ] add a command to summarize a page
+- [ ] button to copy conversation to a new page

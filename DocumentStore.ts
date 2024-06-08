@@ -6,7 +6,7 @@ import {
 	OllamaEmbedding,
 	Response,
 	RetrieverQueryEngine,
-	Settings, storageContextFromDefaults,
+	Settings, StorageContext, storageContextFromDefaults,
 	VectorStoreIndex,
 } from 'llamaindex';
 import {GenericFileSystem} from '@llamaindex/env';
@@ -19,10 +19,10 @@ export class DocumentStore {
 	private readonly plugin: AiChat;
 	private index: VectorStoreIndex;
 	private queryEngine: RetrieverQueryEngine;
-	private storageContext: any;
-	private storagePath: string;
+	private storageContext: StorageContext;
+	private readonly storagePath: string;
 	private statusBar: HTMLElement;
-	private fileSystem: ObsidianFileSystem;
+	private readonly fileSystem: ObsidianFileSystem;
 
 	// private nodePostprocessor: BaseNodePostprocessor;
 
@@ -167,6 +167,8 @@ export class DocumentStore {
 		} else {
 			new Notice("Index found. Inserting document into index...");
 			await this.index.insert(llamaDocument);
+			console.log("inserted llamaDocument into index")
+			console.log(llamaDocument)
 		}
 		this.queryEngine = this.index.asQueryEngine();
 		//console.log("inserted llamaDocument into index")
@@ -174,10 +176,14 @@ export class DocumentStore {
 	}
 
 	public async answer(prompt: string): Promise<Response> {
+		if (this.index && !this.queryEngine) {
+			this.queryEngine = this.index.asQueryEngine();
+		}
 		if (!this.queryEngine) {
 			new Notice("No documents indexed yet. Please index some documents first.");
 			return new Response("No documents indexed yet. Please index some documents first.");
 		}
+		console.log("query_engine : ", this.queryEngine);
 		const response = this.queryEngine.query({query: prompt});
 		return response;
 	}
@@ -257,13 +263,13 @@ class ObsidianFileSystem implements GenericFileSystem {
 
 	// @ts-ignore
 	async mkdir(path: string, options?: { recursive: boolean }): Promise<string | undefined> {
+		let f = this.vault.getAbstractFileByPath(path);
 		try {
-			const f = await this.vault.createFolder(path);
-			return f.path;
+			f = await this.vault.createFolder(path);
 		} catch (e) {
-			console.log(e);
-			return undefined;
+			// this is when it already exists
 		}
+		return f.path;
 	}
 
 
