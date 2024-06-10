@@ -49,18 +49,18 @@ export class DocumentStore {
 
 	async onload() {
 		// @ts-ignore
+		console.log("loading document store");
 		await this.fileSystem.mkdir(this.storagePath, {recursive: true});
 		this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
-		await this.loadFromIndex();
-
+		await this.initializeAgent();
 		// Settings.callbackManager.on("llm-tool-result", (event) => {
 		// 	console.log(event.detail.payload);
 		// });
-		await this.initializeAgent();
 
 	}
 
 	private async initializeAgent() {
+		console.log("initializing agent");
 		if (!this.index) {
 			await this.loadFromIndex();
 		}
@@ -107,7 +107,7 @@ export class DocumentStore {
 			this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
 		} else {
 			console.log('The storageContext does not contain an indexStruct, do nothing');
-			newStorageContext.indexStore.addIndexStruct(new IndexDict());
+			// newStorageContext.indexStore.addIndexStruct(new IndexDict());
 		}
 		// set the indexStruct of newStorageContext.indexStore to the first one
 		// newStorageContext.indexStore.deleteIndexStruct() = await getFirstIndexStruct(newStorageContext.indexStore);
