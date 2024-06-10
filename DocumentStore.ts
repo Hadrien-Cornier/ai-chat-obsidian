@@ -3,6 +3,8 @@ import {App, Notice, TFile, Vault} from 'obsidian';
 import {
 	AgentChatResponse, BaseIndexStore,
 	Document,
+	IndexDict,
+	IndexStruct,
 	Ollama,
 	OllamaEmbedding, OpenAIAgent, QueryEngineTool, ReActAgent,
 	Response,
@@ -96,15 +98,19 @@ export class DocumentStore {
 		new Notice("Loading ...")
 		// @ts-ignore
 		const newStorageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
-		if (await getFirstIndexStruct(newStorageContext.indexStore)) {
+		const indexStructs = await newStorageContext.indexStore.getIndexStructs();
+		console.log("indexStructs loaded from storage: ", indexStructs);
+		if (indexStructs && indexStructs.length > 0) {
 			console.log('The storageContext contains an indexStruct');
-			this.deleteAllIndexStructs(newStorageContext.indexStore);
+			await this.deleteAllButOneIndexStruct(newStorageContext.indexStore);
+			console.log('Deleted all but one indexStruct');
+			this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
 		} else {
-			console.log('The storageContext does not contain an indexStruct');
+			console.log('The storageContext does not contain an indexStruct, do nothing');
+			newStorageContext.indexStore.addIndexStruct(new IndexDict());
 		}
 		// set the indexStruct of newStorageContext.indexStore to the first one
 		// newStorageContext.indexStore.deleteIndexStruct() = await getFirstIndexStruct(newStorageContext.indexStore);
-		this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
 		new Notice("Loaded From Index : " + this.storagePath)
 	}
 
@@ -171,7 +177,6 @@ export class DocumentStore {
 
 	public async initializeIndex(llamaDocument: Document): Promise<void> {
 		await this.deleteAllIndexStructs();
-		// Now you can proceed with creating a new indexStruct
 		try {
 			this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
 			await this.index.insert(llamaDocument);
@@ -195,6 +200,16 @@ export class DocumentStore {
 		}
 	}
 
+	private async deleteAllButOneIndexStruct(indexStore: BaseIndexStore = this.storageContext.indexStore) {
+		// Retrieve all indexStructs
+		const indexStructs = await indexStore.getIndexStructs();
+		// Iterate over each indexStruct and delete it
+		for (const indexStruct of indexStructs) {
+			if (indexStruct.indexId !== indexStructs[0].indexId) {
+				await this.storageContext.indexStore.deleteIndexStruct(indexStruct.indexId);
+			}
+		}
+	}
 	public async getTotalNumberOfIndexedDocuments(): Promise<number> {
 		if (this.index) {
 			const docRecord = await this.index.docStore.getAllDocumentHashes();
