@@ -48,110 +48,75 @@ export class DocumentStore {
 	}
 
 	async onload() {
-		console.log("loading document store");
 		await this.fileSystem.mkdir(this.storagePath, {recursive: true});
 		this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
 		await this.initializeAgent();
 	}
 
 	private async initializeAgent(): Promise<boolean> {
-		console.log("initializing agent");
-		let indexInitialized = false;
-		if (!this.index) {
-			indexInitialized = await this.loadFromIndex(this.storagePath);
-		}
-		if (indexInitialized) { 
-        this.queryEngine = this.index.asQueryEngine();
-		// the agent can choose to retrieve more info or not
-		this.tools = [
-			new QueryEngineTool({
-				queryEngine: this.queryEngine,
+		if (!this.index && await this.loadFromIndex(this.storagePath)) {
+			this.queryEngine = this.index.asQueryEngine();
+			this.tools = [new QueryEngineTool({queryEngine: this.queryEngine,
 				metadata: {
 					name: "note-reading-tool",
-					description: `This tool can answer questions about the contents of notes.`,
-				},
-			}),
-		];
-		const tools = this.tools;
-		this.agent = new OpenAIAgent({tools});
-		new Notice("Agent initialized");
-		return true;
+					description: `This tool can answer questions about the contents of notes.`
+				}
+			})];
+			this.agent = new OpenAIAgent({tools: this.tools});
+			new Notice("Agent initialized");
+			return true;
 		}
 		return false;
 	}
 
 	public async loadFromIndex(storagePath: string): Promise<boolean> {
-        console.log("loading from index");
-		// helper funcs
-		async function getFirstIndexStruct(indexStore :  BaseIndexStore) {
-			// Get the array or other data structure that stores the index structures
-			let indexStructs = await indexStore.getIndexStructs();
-			// If there are no index structures, return null or throw an error
-			if (indexStructs.length === 0) {
-				return null;
-			}
-			// Return the first index structure
-			return indexStructs[0];
-		}
-		// @ts-ignore
 		const indexStructs = await this.storageContext.indexStore.getIndexStructs();
-		console.log("indexStructs loaded from storage: ", indexStructs);
-		if (indexStructs && indexStructs.length > 0) {
-			console.log('The storageContext contains an indexStruct');
+		if (indexStructs?.length > 0) {
 			await this.deleteAllButOneIndexStruct(this.storageContext.indexStore);
-			console.log('Deleted all but one indexStruct');
 			this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
-			new Notice("Loaded From Index : " + storagePath)
+			new Notice(`Loaded From Index : ${storagePath}`);
 			return true;
-		} else {
-			new Notice("No Document Index Found : " + storagePath)
-			console.log('The storageContext does not contain an indexStruct, do nothing');
-			return false;
 		}
+		new Notice(`No Document Index Found : ${storagePath}`);
+		return false;
 	}
 
 	public async addDocumentPath(filePath: string): Promise<number> {
-		const loadingIcon = document.createElement('span');
-		loadingIcon.innerText = '.';
-		loadingIcon.id = 'loading-icon';
-		loadingIcon.classList.add('loading-icon');
-
-		loadingIcon.setAttribute('title', 'Indexing in progress');
-
+		const loadingIcon = this.createLoadingIcon();
 		this.statusBar.appendChild(loadingIcon);
-
 		const result = await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
-
 		this.statusBar.removeChild(loadingIcon);
-
-		if (filePath === this.app.workspace.getActiveFile().path) {
-			this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
-			this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
-		}
+		this.updateRibbonIcon(filePath);
 
 		return result;
 	}
 
 	public async addAllDocuments(filePaths: Array<string>): Promise<void> {
-		const loadingIcon = document.createElement('span');
-		loadingIcon.innerText = '.';
-		loadingIcon.id = 'loading-icon';
-		loadingIcon.classList.add('loading-icon');
-		loadingIcon.setAttribute('title', 'Indexing in progress');
+		const loadingIcon = this.createLoadingIcon();
 		this.statusBar.appendChild(loadingIcon);
 		for (const filePath of filePaths) {
 			loadingIcon.innerText = `*`;
 			loadingIcon.setAttribute('title', `Indexing ${filePaths.length} files left`);
 			await this.addTfile(this.app.vault.getAbstractFileByPath(filePath) as TFile);
-			// Check if the indexed file is the active file
-			if (filePath === this.app.workspace.getActiveFile().path) {
-				this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
-				this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
-			}
+			this.updateRibbonIcon(filePath);
 		}
-
-		// Remove the loading icon from the status bar
 		this.statusBar.removeChild(loadingIcon);
+	}
+
+	private createLoadingIcon(): HTMLElement {
+		const loadingIcon = document.createElement('span');
+		loadingIcon.innerText = '.';
+		loadingIcon.id = 'loading-icon';
+		loadingIcon.classList.add('loading-icon');
+		loadingIcon.setAttribute('title', 'Indexing in progress');
+		return loadingIcon;
+	}
+
+	private updateRibbonIcon(filePath: string): void {
+		if (filePath === this.app.workspace.getActiveFile().path) {
+			this.plugin.ribbonIconElIndex.removeClass('current-file-not-indexed');
+			this.plugin.ribbonIconElIndex.addClass('current-file-indexed');
+		}
 	}
 
 	public preprocessDocumentText(text: string): string {
@@ -206,6 +171,7 @@ export class DocumentStore {
 			}
 		}
 	}
+
 	public async getTotalNumberOfIndexedDocuments(): Promise<number> {
 		if (this.index) {
 			const docRecord = await this.index.docStore.getAllDocumentHashes();
@@ -234,7 +200,7 @@ export class DocumentStore {
 	}
 
 	public async answer(prompt: string): Promise<AgentChatResponse> {
-		if (true){  // this.index && !this.queryEngine) {
+		if (true) {  // this.index && !this.queryEngine) {
 			console.log("No agent found. Initializing agent...");
 			await this.initializeAgent();
 			console.log("Agent initialized");
