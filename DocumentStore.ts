@@ -48,23 +48,20 @@ export class DocumentStore {
 	}
 
 	async onload() {
-		// @ts-ignore
 		console.log("loading document store");
 		await this.fileSystem.mkdir(this.storagePath, {recursive: true});
 		this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
 		await this.initializeAgent();
-		// Settings.callbackManager.on("llm-tool-result", (event) => {
-		// 	console.log(event.detail.payload);
-		// });
-
 	}
 
-	private async initializeAgent() {
+	private async initializeAgent(): Promise<boolean> {
 		console.log("initializing agent");
+		let indexInitialized = false;
 		if (!this.index) {
-			await this.loadFromIndex();
+			indexInitialized = await this.loadFromIndex(this.storagePath);
 		}
-		this.queryEngine = this.index.asQueryEngine();
+		if (indexInitialized) { 
+        this.queryEngine = this.index.asQueryEngine();
 		// the agent can choose to retrieve more info or not
 		this.tools = [
 			new QueryEngineTool({
@@ -77,10 +74,14 @@ export class DocumentStore {
 		];
 		const tools = this.tools;
 		this.agent = new OpenAIAgent({tools});
+		new Notice("Agent initialized");
+		return true;
+		}
+		return false;
 	}
 
-	public async loadFromIndex(): Promise<void> {
-
+	public async loadFromIndex(storagePath: string): Promise<boolean> {
+        console.log("loading from index");
 		// helper funcs
 		async function getFirstIndexStruct(indexStore :  BaseIndexStore) {
 			// Get the array or other data structure that stores the index structures
@@ -92,26 +93,21 @@ export class DocumentStore {
 			// Return the first index structure
 			return indexStructs[0];
 		}
-
-
-		//
-		new Notice("Loading ...")
 		// @ts-ignore
-		const newStorageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
-		const indexStructs = await newStorageContext.indexStore.getIndexStructs();
+		const indexStructs = await this.storageContext.indexStore.getIndexStructs();
 		console.log("indexStructs loaded from storage: ", indexStructs);
 		if (indexStructs && indexStructs.length > 0) {
 			console.log('The storageContext contains an indexStruct');
-			await this.deleteAllButOneIndexStruct(newStorageContext.indexStore);
+			await this.deleteAllButOneIndexStruct(this.storageContext.indexStore);
 			console.log('Deleted all but one indexStruct');
-			this.index = await VectorStoreIndex.init({storageContext: newStorageContext});
+			this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
+			new Notice("Loaded From Index : " + storagePath)
+			return true;
 		} else {
+			new Notice("No Document Index Found : " + storagePath)
 			console.log('The storageContext does not contain an indexStruct, do nothing');
-			// newStorageContext.indexStore.addIndexStruct(new IndexDict());
+			return false;
 		}
-		// set the indexStruct of newStorageContext.indexStore to the first one
-		// newStorageContext.indexStore.deleteIndexStruct() = await getFirstIndexStruct(newStorageContext.indexStore);
-		new Notice("Loaded From Index : " + this.storagePath)
 	}
 
 	public async addDocumentPath(filePath: string): Promise<number> {
