@@ -36,7 +36,6 @@ export class DocumentStore {
 		this.statusBar = statusBar;
 		dotenv.config({ path: process.cwd()+'/config/.env'});
 		let openAIKey = process.env.OPENAI_API_KEY;
-
 		console.log("openAIKey: ", openAIKey);
 		this.fileSystem = new ObsidianFileSystem(this.app.vault);
 		Settings.llm = new Ollama({model: this.plugin.settings.modelName});
@@ -54,7 +53,8 @@ export class DocumentStore {
 	}
 
 	private async initializeAgent(): Promise<boolean> {
-		if (!this.index && await this.loadFromIndex(this.storagePath)) {
+		let loadedFromIndex = await this.loadFromIndex(this.storagePath);
+		if (this.index && loadedFromIndex) {
 			this.queryEngine = this.index.asQueryEngine();
 			this.tools = [new QueryEngineTool({queryEngine: this.queryEngine,
 				metadata: {
@@ -62,11 +62,20 @@ export class DocumentStore {
 					description: `This tool can answer questions about the contents of notes.`
 				}
 			})];
-			this.agent = new OpenAIAgent({tools: this.tools});
+			// open ai agent may not be able to run on browser, maybe we have to create our own 
+			// llamaindex agent runner that can run on browser
+			this.agent = new OpenAIAgent({tools: this.tools, dangerouslyAllowBrowser: true });
 			new Notice("Agent initialized");
+			console.log("initializeAgent : Agent initialized");
 			return true;
 		}
-		return false;
+		else {
+			new Notice("Agent not initialized");
+			console.log("this.index = ", this.index);
+			console.log("loadedFromIndex =", loadedFromIndex);
+			console.log("initializeAgent : Agent not initialized");
+			return false;
+		}
 	}
 
 	public async loadFromIndex(storagePath: string): Promise<boolean> {
@@ -200,8 +209,9 @@ export class DocumentStore {
 	}
 
 	public async answer(prompt: string): Promise<AgentChatResponse> {
-		if (true) {  // this.index && !this.queryEngine) {
+		if (!this.agent) {  // this.index && !this.queryEngine) {
 			console.log("No agent found. Initializing agent...");
+			process.env.OPENAI_API_KEY = this.plugin.settings.openAIKey;
 			await this.initializeAgent();
 			console.log("Agent initialized");
 			//this.queryEngine = this.index.asQueryEngine();

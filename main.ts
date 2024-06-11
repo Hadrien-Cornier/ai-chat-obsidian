@@ -174,5 +174,15 @@ class SettingTab extends PluginSettingTab {
 					this.plugin.settings.maxWords = parseInt(value);
 					await this.plugin.saveSettings();
 				}));
+		new Setting(containerEl)
+			.setName('openai API Key')
+			.setDesc('Enter your OpenAI API Key')
+			.addText(text => text
+				.setValue(this.plugin.settings.openAIKey.toString())
+				.onChange(async (value) => {
+					this.plugin.settings.openAIKey = value;
+					process.env.OPENAI_API_KEY = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 }

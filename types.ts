@@ -2,12 +2,14 @@ export interface AiChatSettings {
 	stripUrls: boolean;
 	modelName: string;
 	maxWords: number;
+	openAIKey?: string;
 }
 
 export const DEFAULT_SETTINGS: AiChatSettings = {
 	stripUrls: true,
     modelName: 'llama2',
 	maxWords: 2000,
+	openAIKey: '',
 }
 
 export enum DocStoreStrategy {
