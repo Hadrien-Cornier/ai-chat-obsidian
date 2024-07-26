@@ -1,10 +1,3 @@
-export interface AiChatSettings {
-	stripUrls: boolean;
-	modelName: string;
-	maxWords: number;
-	openAIKey?: string;
-}
-
 export const DEFAULT_SETTINGS: AiChatSettings = {
 	stripUrls: true,
     modelName: 'llama2',

@@ -1,5 +1,6 @@
-import AiChat from './main';
-import {App, Notice, TFile, Vault} from 'obsidian';
+import AiChat from "../main";
+import { DocStoreStrategy } from '../types';
+import { App, Notice, TFile, Vault } from 'obsidian';
 import {
 	AgentChatResponse, BaseIndexStore,
 	Document,
@@ -12,9 +13,8 @@ import {
 	Settings, StorageContext, storageContextFromDefaults,
 	VectorStoreIndex,
 } from 'llamaindex';
-import {GenericFileSystem} from '@llamaindex/env';
-import {DocStoreStrategy} from "./types";
-import {BaseTool} from "llamaindex/dist/type/types";
+import { GenericFileSystem } from '@llamaindex/env';
+import { BaseTool } from "llamaindex/dist/type/types";
 import * as dotenv from 'dotenv';
 
 export class DocumentStore {
@@ -34,12 +34,12 @@ export class DocumentStore {
 		this.plugin = plugin;
 		this.storagePath = storagePath;
 		this.statusBar = statusBar;
-		dotenv.config({ path: process.cwd()+'/config/.env'});
+		dotenv.config({ path: process.cwd() + '/config/.env' });
 		let openAIKey = process.env.OPENAI_API_KEY;
 		console.log("openAIKey: ", openAIKey);
 		this.fileSystem = new ObsidianFileSystem(this.app.vault);
-		Settings.llm = new Ollama({model: this.plugin.settings.modelName});
-		Settings.embedModel = new OllamaEmbedding({model: this.plugin.settings.modelName});
+		Settings.llm = new Ollama({ model: this.plugin.settings.modelName });
+		Settings.embedModel = new OllamaEmbedding({ model: this.plugin.settings.modelName });
 		Settings.callbackManager.on("llm-tool-call", (event) => {
 			console.log(event.detail.payload);
 		});
@@ -47,8 +47,8 @@ export class DocumentStore {
 	}
 
 	async onload() {
-		await this.fileSystem.mkdir(this.storagePath, {recursive: true});
-		this.storageContext = await storageContextFromDefaults({persistDir: this.storagePath, fs: this.fileSystem});
+		await this.fileSystem.mkdir(this.storagePath);
+		this.storageContext = await storageContextFromDefaults({ persistDir: this.storagePath, fs: this.fileSystem });
 		await this.initializeAgent();
 	}
 
@@ -56,15 +56,20 @@ export class DocumentStore {
 		let loadedFromIndex = await this.loadFromIndex(this.storagePath);
 		if (this.index && loadedFromIndex) {
 			this.queryEngine = this.index.asQueryEngine();
-			this.tools = [new QueryEngineTool({queryEngine: this.queryEngine,
-				metadata: {
-					name: "note-reading-tool",
-					description: `This tool can answer questions about the contents of notes.`
-				}
-			})];
+			this.tools = [
+				new QueryEngineTool(
+					{
+						queryEngine: this.queryEngine,
+						metadata: {
+							name: "note-reading-tool",
+							description: `This tool can answer questions about notes in the vault.`,
+						}
+					}
+				)
+			];
 			// open ai agent may not be able to run on browser, maybe we have to create our own 
 			// llamaindex agent runner that can run on browser
-			this.agent = new OpenAIAgent({tools: this.tools, dangerouslyAllowBrowser: true });
+			this.agent = new OpenAIAgent({ tools: this.tools });
 			new Notice("Agent initialized");
 			console.log("initializeAgent : Agent initialized");
 			return true;
@@ -82,7 +87,7 @@ export class DocumentStore {
 		const indexStructs = await this.storageContext.indexStore.getIndexStructs();
 		if (indexStructs?.length > 0) {
 			await this.deleteAllButOneIndexStruct(this.storageContext.indexStore);
-			this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
+			this.index = await VectorStoreIndex.init({ storageContext: this.storageContext });
 			new Notice(`Loaded From Index : ${storagePath}`);
 			return true;
 		}
@@ -142,13 +147,13 @@ export class DocumentStore {
 	public async convertTFileToLlamaIndexDocument(file: TFile): Promise<Document> {
 		let fileContent: string = await this.app.vault.read(file);
 		fileContent = this.preprocessDocumentText(fileContent);
-		return new Document({text: fileContent});
+		return new Document({ text: fileContent });
 	}
 
 	public async initializeIndex(llamaDocument: Document): Promise<void> {
 		await this.deleteAllIndexStructs();
 		try {
-			this.index = await VectorStoreIndex.init({storageContext: this.storageContext});
+			this.index = await VectorStoreIndex.init({ storageContext: this.storageContext });
 			await this.index.insert(llamaDocument);
 			console.log("inserted llamaDocument into index")
 		} catch (e) {

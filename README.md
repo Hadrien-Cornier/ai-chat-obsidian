@@ -44,3 +44,32 @@ also if ollama request is blocked because of CORS, you can do this :
 - [ ] add editor command to autocomplete the current line with llms
 - [ ] use Promise.all(...) to insert all documents with a command
 - [ ] button to copy conversation to a new page
+
+
+Document Store : 
+  - embed file
+  - index file
+  - query for files with nearest neighbour + tag filtering
+  - load index
+  - save index
+  - index all documents
+
+Answer Generator : 
+  - query for tool use 
+  - use tools (web, documents)
+  - rerank results 
+  - create context
+  - query llm with Context
+  - add tags to the answer
+  - send history to DocumentStore
+
+Config :
+  - model name
+  - provider : openai, cohere, local, anthropic
+  - openai key
+
+ChatHistory : should it be part of DOcument Store ? 
+
+Chatbox : 
+  - define the UI of the modal
+  - buttons to copy paste, post
